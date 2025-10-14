@@ -8,9 +8,9 @@ const server: net.Server = net.createServer((connection: net.Socket) => {
     let commandSensitive = command.toUpperCase().trim();
 
     if (commandSensitive === "PING") {
-      connection.write("+PONG\r\n");
+      connection.write("PONG\r\n");
     } else if (commandSensitive === "ECHO") {
-      connection.write(`$${args[0].length}\r\n${args[0]}\r\n`);
+      connection.write(`${args[0]}\r\n`);
     } else {
       connection.write("-ERR unknown command\r\n");
     }
