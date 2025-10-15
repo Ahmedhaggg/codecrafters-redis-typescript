@@ -25,9 +25,9 @@ const server = net.createServer((connection) => {
         setTimeout(() => {
           store.delete(argument);
         }, expirySeconds * 1000);
-      } else {
-        store.set(argument, parts[6]);
       }
+      store.set(argument, parts[6]);
+
       connection.write("+OK\r\n");
     } else if (command === "GET") {
       const value = store.get(argument);
