@@ -20,7 +20,14 @@ const server = net.createServer((connection) => {
     } else if (command === "PING") {
       connection.write("+PONG\r\n");
     } else if (command === "SET") {
-      store.set(argument, parts[6]);
+      const expirySeconds = parseInt(parts[8]);
+      if (expirySeconds) {
+        setTimeout(() => {
+          store.delete(argument);
+        }, expirySeconds * 1000);
+      } else {
+        store.set(argument, parts[6]);
+      }
       connection.write("+OK\r\n");
     } else if (command === "GET") {
       const value = store.get(argument);
