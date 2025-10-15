@@ -30,10 +30,9 @@ const server = net.createServer((connection) => {
 
       connection.write("+OK\r\n");
     } else if (command === "GET") {
-      const value = store.get(argument);
-      if (value) {
-        const response = `$${value.length}\r\n${value}\r\n`;
-        connection.write(response);
+      if (store.has(argument)) {
+        const val = store.get(argument)!;
+        connection.write(`$${val.length}\r\n${val}\r\n`);
       } else {
         connection.write("$-1\r\n");
       }
