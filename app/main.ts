@@ -20,10 +20,12 @@ const server = net.createServer((connection) => {
     } else if (command === "PING") {
       connection.write("+PONG\r\n");
     } else if (command === "SET") {
-      const expiryCommand = parts.find((part) => part.toUpperCase() === "EX" || part.toUpperCase() === "PX");
+      const expiryCommandIndex = parts.indexOf("PX");
+
       const expirySeconds = parseInt(parts[parts.length - 1]) || null;
 
-      if (expiryCommand && expirySeconds) {
+      if (expiryCommandIndex) {
+        const expirySeconds = parseInt(parts[expiryCommandIndex + 1]);
         setTimeout(() => {
           store.delete(argument);
         }, expirySeconds * 1000);
