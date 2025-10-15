@@ -1,5 +1,7 @@
 import * as net from "net";
 
+const store = new Map<string, string>();
+
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
     const message = data.toString();
@@ -17,6 +19,17 @@ const server = net.createServer((connection) => {
       connection.write(response);
     } else if (command === "PING") {
       connection.write("+PONG\r\n");
+    } else if (command === "SET") {
+      store.set(argument, parts[6]);
+      connection.write("+OK\r\n");
+    } else if (command === "GET") {
+      const value = store.get(argument);
+      if (value) {
+        const response = `$${value.length}\r\n${value}\r\n`;
+        connection.write(response);
+      } else {
+        connection.write("$-1\r\n");
+      }
     } else {
       connection.write("-ERR unknown command\r\n");
     }
