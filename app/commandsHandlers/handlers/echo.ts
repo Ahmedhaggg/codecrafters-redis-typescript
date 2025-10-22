@@ -1,5 +1,5 @@
-import { RespEncoder } from "../resp/encoder";
-import { RespBulkString, RespInteger, RespString, type RespCommand } from "../resp/objects";
+import { RespEncoder } from "../../resp/encoder";
+import { RespBulkString, RespInteger, RespString, type RespCommand } from "../../resp/objects";
 
 export const echo = (command: RespCommand): string => {
   if (!command.args) return RespEncoder.encodeError("args not found");

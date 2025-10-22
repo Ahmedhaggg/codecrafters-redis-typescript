@@ -13,4 +13,8 @@ export class RespEncoder {
   public static encodeError(data: string): string {
     return `-ERR ${data.length}\r\n${data}\r\n`;
   }
+
+  public static encodeInteger(data: number): string {
+    return `:${data}\r\n`;
+  }
 }

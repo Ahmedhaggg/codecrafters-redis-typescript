@@ -41,10 +41,12 @@ export class RespArray extends RespObject {
   }
 }
 
-export type CommandName = "ECHO" | "PING" | "SET" | "GET" | "DEL";
+export type CommandName = "ECHO" | "PING" | "SET" | "GET" | "DEL" | "RPUSH";
 
 export class RespCommand extends RespObject {
   constructor(raw: Buffer, public readonly command: CommandName, public readonly args: RespObject[] | null) {
     super(RespObjectType.Command, raw);
   }
 }
+
+export const COMMANDS: CommandName[] = ["ECHO", "PING", "SET", "GET", "DEL", "RPUSH"];

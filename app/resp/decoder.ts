@@ -1,4 +1,5 @@
 import {
+  COMMANDS,
   RespArray,
   RespBulkString,
   RespCommand,
@@ -46,11 +47,10 @@ export class RespDecoder {
   private convertArrayToCommand(arrayObject: RespArray): RespCommand | null {
     const elements = arrayObject.items?.map((item) => item.raw.toString()) || [];
     const firstElement = elements[0]?.toUpperCase();
-    const commandNames: CommandName[] = ["ECHO", "PING", "SET", "GET", "DEL"];
 
     console.log("➡️ [Decoder] Converting array elements:", elements);
 
-    if (firstElement && commandNames.includes(firstElement as CommandName)) {
+    if (firstElement && COMMANDS.includes(firstElement as CommandName)) {
       const args = arrayObject.items?.slice(1) || [];
       console.log(
         `🔧 [Decoder] Recognized command: ${firstElement}, args:`,

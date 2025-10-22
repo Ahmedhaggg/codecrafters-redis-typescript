@@ -1,12 +1,7 @@
 import * as net from "net";
 import { RespDecoder } from "./resp/decoder";
 import { RespCommand } from "./resp/objects";
-import { echo } from "./commandsHandlers/echo";
-import { ping } from "./commandsHandlers/ping";
-import { del } from "./commandsHandlers/del";
-import { get } from "./commandsHandlers/get";
-import { set } from "./commandsHandlers/set";
-import { RespEncoder } from "./resp/encoder";
+import { handleCommand } from "./commandsHandlers";
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -21,31 +16,8 @@ const server = net.createServer((connection) => {
       return;
     }
 
-    switch (command.command) {
-      case "ECHO":
-        connection.write(echo(command));
-        break;
-
-      case "PING":
-        connection.write(ping(command));
-        break;
-
-      case "DEL":
-        connection.write(del(command));
-        break;
-
-      case "GET":
-        connection.write(get(command));
-        break;
-
-      case "SET":
-        connection.write(set(command));
-        break;
-
-      default:
-        connection.write(RespEncoder.encodeError("INVALID"));
-        break;
-    }
+    const res = handleCommand(command);
+    return connection.write(res);
   });
 });
 

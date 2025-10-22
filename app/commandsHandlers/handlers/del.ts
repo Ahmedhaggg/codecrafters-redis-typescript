@@ -1,6 +1,6 @@
-import { RespEncoder } from "../resp/encoder";
-import { RespBulkString, type RespCommand } from "../resp/objects";
-import { StoreManager } from "../store/store-manager";
+import { RespEncoder } from "../../resp/encoder";
+import { RespBulkString, type RespCommand } from "../../resp/objects";
+import { StoreManager } from "../../store/store-manager";
 
 export const del = (command: RespCommand): string => {
   const key = command.args?.[0];

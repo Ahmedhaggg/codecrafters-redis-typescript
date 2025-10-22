@@ -1,6 +1,6 @@
-import { RespEncoder } from "../resp/encoder";
-import { RespBulkString, RespString, type RespCommand } from "../resp/objects";
-import { StoreManager } from "../store/store-manager";
+import { RespEncoder } from "../../resp/encoder";
+import { RespBulkString, RespString, type RespCommand } from "../../resp/objects";
+import { StoreManager } from "../../store/store-manager";
 
 export const get = (command: RespCommand) => {
   if (!command.args) return RespEncoder.encodeError("missed key");
@@ -14,5 +14,5 @@ export const get = (command: RespCommand) => {
 
   if (!value) return RespEncoder.encodeNil();
 
-  return RespEncoder.encodeString(value);
+  return RespEncoder.encodeString(value.toString());
 };
