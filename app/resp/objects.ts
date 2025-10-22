@@ -30,7 +30,7 @@ export class RespInteger extends RespObject {
 }
 
 export class RespBulkString extends RespObject {
-  constructor(raw: Buffer, public readonly value: string | null) {
+  constructor(raw: Buffer, public readonly value: string) {
     super(RespObjectType.BulkString, raw);
   }
 }
