@@ -1,4 +1,7 @@
 export class RespEncoder {
+  public static encodeNil(): Buffer {
+    return Buffer.from(`$-1\r\n`);
+  }
   public static encodeSimpleString(data: string): string {
     return `+${data}\r\n`;
   }

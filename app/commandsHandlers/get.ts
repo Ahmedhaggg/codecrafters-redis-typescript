@@ -12,7 +12,7 @@ export const get = (command: RespCommand) => {
 
   const value = StoreManager.get().get(keyCommand.value);
 
-  if (!value) return RespEncoder.encodeString("-1");
+  if (!value) return RespEncoder.encodeNil();
 
   return RespEncoder.encodeString(value);
 };
