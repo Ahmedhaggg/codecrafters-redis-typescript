@@ -52,5 +52,5 @@ export const lRange = (command: RespCommand) => {
 
   const list = StoreManager.get().get(listName) ?? [];
 
-  return RespEncoder.encodeArray(list);
+  return RespEncoder.encodeArray(list.slice(startIndex, endIndex));
 };
