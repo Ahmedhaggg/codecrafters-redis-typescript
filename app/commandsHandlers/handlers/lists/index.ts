@@ -28,6 +28,9 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
   return RespEncoder.encodeInteger(newList.length);
 };
 
+export const lPush = (command: RespCommand) => push(command, 0);
+export const rPush = (command: RespCommand) => push(command);
+
 export const lRange = (command: RespCommand) => {
   if (!isContainsArgs(command)) {
     return RespEncoder.encodeError("Invalid key or value");
@@ -67,5 +70,21 @@ export const lRange = (command: RespCommand) => {
   return RespEncoder.encodeArray(result);
 };
 
-export const lPush = (command: RespCommand) => push(command, 0);
-export const rPush = (command: RespCommand) => push(command);
+export const lLen = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+
+  // Narrow to RespBulkString[]
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const listName = args[0].value;
+
+  let list = StoreManager.get().get(listName) ?? [];
+
+  return RespEncoder.encodeInteger(list.length);
+};
