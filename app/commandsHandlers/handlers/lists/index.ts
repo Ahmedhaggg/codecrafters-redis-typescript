@@ -42,15 +42,27 @@ export const lRange = (command: RespCommand) => {
 
   const [listName, startArgString, endArgString] = args.map((a) => (a as RespBulkString).value);
 
-  const startIndex = parseInt(startArgString);
+  const startIndex = parseInt(startArgString, 10);
+  const endIndex = parseInt(endArgString, 10);
 
-  const endIndex = parseInt(endArgString);
-
-  if (typeof startIndex !== "number" || typeof endIndex !== "number") {
+  if (isNaN(startIndex) || isNaN(endIndex)) {
     return RespEncoder.encodeError("Invalid index keys");
   }
 
   const list = StoreManager.get().get(listName) ?? [];
 
-  return RespEncoder.encodeArray(list.slice(startIndex, endIndex + 1));
+  const listLength = list.length;
+
+  let start = startIndex < 0 ? listLength + startIndex : startIndex;
+  let end = endIndex < 0 ? listLength + endIndex : endIndex;
+
+  if (start < 0) start = 0;
+  if (end < 0) end = 0;
+
+  end = Math.min(end + 1, listLength);
+
+  if (start > end) return RespEncoder.encodeArray([]);
+
+  const result = list.slice(start, end);
+  return RespEncoder.encodeArray(result);
 };
