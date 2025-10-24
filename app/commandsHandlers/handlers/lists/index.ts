@@ -17,11 +17,11 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
-  const [listName, ...listValues] = args.map((a) => (a as RespBulkString).value);
+  const [listName, ...newValues] = args.map((a) => (a as RespBulkString).value);
 
   let list = StoreManager.get().get(listName) ?? [];
 
-  const newList = dir == 0 ? [...list, ...listValues] : [...listValues, ...list];
+  const newList = dir === 0 ? [...newValues, ...list] : [...list, ...newValues];
 
   StoreManager.get().set(listName, newList);
 
