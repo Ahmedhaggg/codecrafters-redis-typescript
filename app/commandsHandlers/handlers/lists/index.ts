@@ -21,7 +21,7 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
 
   let list = StoreManager.get().get(listName) ?? [];
 
-  const newList = dir == 1 ? [...list, ...listValues] : [...listValues, ...list];
+  const newList = dir == 0 ? [...list, ...listValues] : [...listValues, ...list];
 
   StoreManager.get().set(listName, newList);
 
