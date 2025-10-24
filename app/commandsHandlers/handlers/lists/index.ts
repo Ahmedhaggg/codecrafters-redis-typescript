@@ -101,12 +101,22 @@ export const lPop = (command: RespCommand) => {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
-  const [listName] = args.map((a) => (a as RespBulkString).value);
+  const [listName, num] = args.map((a) => (a as RespBulkString).value);
 
   let list = StoreManager.get().get(listName) ?? [];
 
   if (!list.length) {
     return RespEncoder.encodeNil();
+  }
+
+  if (num) {
+    const requestNum = Math.min(parseInt(num, 10), list.length);
+
+    const removed = list.slice(0, requestNum);
+
+    StoreManager.get().set(listName, list.slice(requestNum));
+
+    return RespEncoder.encodeArray(removed);
   }
 
   const firstItem = list[0];
