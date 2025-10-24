@@ -3,7 +3,7 @@ import type { CommandName, RespCommand } from "../resp/objects";
 import { del } from "./handlers/del";
 import { echo } from "./handlers/echo";
 import { get } from "./handlers/get";
-import { rpush } from "./handlers/lists/rpush";
+import { lRange, rpush } from "./handlers/lists";
 import { ping } from "./handlers/ping";
 import { set } from "./handlers/set";
 
@@ -24,5 +24,6 @@ export const commandHandlers: Record<CommandName, (cmd: RespCommand) => string |
   GET: get,
   SET: set,
   RPUSH: rpush,
+  LRANGE: lRange,
   // You can add RPUSH, LRANGE, etc here later
 };

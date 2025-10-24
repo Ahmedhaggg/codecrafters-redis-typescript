@@ -17,4 +17,8 @@ export class RespEncoder {
   public static encodeInteger(data: number): string {
     return `:${data}\r\n`;
   }
+
+  public static encodeArray(data: string[]): string {
+    return `*${data.length}\r\n${data.join("\r\n")}${data.length ? "\r\n" : ""}`;
+  }
 }

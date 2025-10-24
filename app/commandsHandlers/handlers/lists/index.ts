@@ -27,3 +27,30 @@ export const rpush = (command: RespCommand) => {
 
   return RespEncoder.encodeInteger(list.length);
 };
+
+export const lRange = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+
+  // Narrow to RespBulkString[]
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const [listName, startArgString, endArgString] = args.map((a) => (a as RespBulkString).value);
+
+  const startIndex = parseInt(startArgString);
+
+  const endIndex = parseInt(endArgString);
+
+  if (typeof startIndex !== "number" || typeof endIndex !== "number") {
+    return RespEncoder.encodeError("Invalid index keys");
+  }
+
+  const list = StoreManager.get().get(listName) ?? [];
+
+  return RespEncoder.encodeArray(list);
+};
