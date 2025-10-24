@@ -4,7 +4,7 @@ import { StoreManager } from "../../../store/store-manager";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
 
-export const rpush = (command: RespCommand) => {
+export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
   // Check that command has args
   if (!isContainsArgs(command)) {
     return RespEncoder.encodeError("Invalid key or value");
@@ -21,8 +21,8 @@ export const rpush = (command: RespCommand) => {
 
   let list = StoreManager.get().get(listName) ?? [];
 
-  list.push(...listValues);
-  console.log(list);
+  const newList = dir == 1 ? [...list, ...listValues] : [...listValues, ...list];
+
   StoreManager.get().set(listName, list);
 
   return RespEncoder.encodeInteger(list.length);
@@ -66,3 +66,6 @@ export const lRange = (command: RespCommand) => {
   const result = list.slice(start, end);
   return RespEncoder.encodeArray(result);
 };
+
+export const lPush = (command: RespCommand) => push(command, 0);
+export const rPush = (command: RespCommand) => push(command);
