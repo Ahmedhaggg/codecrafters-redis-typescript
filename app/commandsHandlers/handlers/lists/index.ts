@@ -88,3 +88,30 @@ export const lLen = (command: RespCommand) => {
 
   return RespEncoder.encodeInteger(list.length);
 };
+
+export const lPop = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+
+  // Narrow to RespBulkString[]
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const [listName] = args.map((a) => (a as RespBulkString).value);
+
+  let list = StoreManager.get().get(listName) ?? [];
+
+  if (!list.length) {
+    return RespEncoder.encodeNil();
+  }
+
+  const firstItem = list[0];
+
+  StoreManager.get().set(listName, list.slice(1));
+
+  return RespEncoder.encodeString(firstItem);
+};
