@@ -23,9 +23,9 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
 
   const newList = dir == 1 ? [...list, ...listValues] : [...listValues, ...list];
 
-  StoreManager.get().set(listName, list);
+  StoreManager.get().set(listName, newList);
 
-  return RespEncoder.encodeInteger(list.length);
+  return RespEncoder.encodeInteger(newList.length);
 };
 
 export const lRange = (command: RespCommand) => {
