@@ -18,7 +18,8 @@ export class RespEncoder {
     return `:${data}\r\n`;
   }
 
-  public static encodeArray(data: string[]): string {
-    return `*${data.length}\r\n${data.join("\r\n")}${data.length ? "\r\n" : ""}`;
+  static encodeArray(values: string[]): string {
+    const encodedValues = values.map((v) => this.encodeString(v)).join("");
+    return `*${values.length}\r\n${encodedValues}`;
   }
 }
