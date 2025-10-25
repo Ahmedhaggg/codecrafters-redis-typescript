@@ -25,8 +25,10 @@ export const xAdd = (command: RespCommand) => {
 
   let xAddList = StoreManager.get().get(listName) as Map<string, Record<string, string>> | undefined;
 
+  const ID = makeId(xAddList, id);
+
   // Validate ID properly
-  const validation = validateId(xAddList, id);
+  const validation = validateId(xAddList, ID);
 
   if (!validation.valid) {
     return RespEncoder.encodeError(validation.error!);
@@ -36,10 +38,10 @@ export const xAdd = (command: RespCommand) => {
     xAddList = new Map<string, Record<string, string>>();
   }
 
-  xAddList.set(id, formattedValues);
+  xAddList.set(ID, formattedValues);
   StoreManager.get().set(listName, xAddList);
 
-  return RespEncoder.encodeString(id);
+  return RespEncoder.encodeString(ID);
 };
 
 const validateId = (
@@ -91,4 +93,40 @@ const validateId = (
   }
 
   return { valid: true };
+};
+
+const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: string) => {
+  const [timestamp, sequence] = id.split("-");
+
+  if (timestamp !== "*" && sequence !== "*") return id;
+
+  if (timestamp == "*" && sequence == "*") {
+    const lastKey = Array.from(xAddList?.keys() ?? []).pop();
+
+    if (!lastKey) {
+      return "0-1";
+    }
+
+    const [lastKeyTimestamp, lastKeySequence] = lastKey.split("-");
+
+    return `${lastKeyTimestamp}-${parseInt(lastKeySequence) + 1}`;
+  }
+
+  if (timestamp == "*") {
+    const lastKey = Array.from(xAddList?.keys() ?? []).pop();
+
+    if (!lastKey) {
+      return `0-${sequence}`;
+    }
+
+    return `${parseInt(lastKey.split("-")[0]) + 1}-${sequence}`;
+  }
+
+  const lastKey = Array.from(xAddList?.keys() ?? []).pop();
+
+  if (!lastKey) {
+    return `${timestamp}-${1}`;
+  }
+
+  return `${timestamp}-${parseInt(lastKey.split("-")[1]) + 1}`;
 };
