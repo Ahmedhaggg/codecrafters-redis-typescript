@@ -96,11 +96,7 @@ const validateId = (
 };
 
 const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: string) => {
-  const [timestamp, sequence] = id.split("-");
-
-  if (timestamp !== "*" && sequence !== "*") return id;
-
-  if (timestamp == "*" && sequence == "*") {
+  if (id == "*") {
     const lastKey = Array.from(xAddList?.keys() ?? []).pop();
 
     if (!lastKey) {
@@ -111,6 +107,10 @@ const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: s
 
     return `${lastKeyTimestamp}-${parseInt(lastKeySequence) + 1}`;
   }
+
+  const [timestamp, sequence] = id.split("-");
+
+  if (timestamp !== "*" && sequence !== "*") return id;
 
   if (timestamp == "*") {
     const lastKey = Array.from(xAddList?.keys() ?? []).pop();
