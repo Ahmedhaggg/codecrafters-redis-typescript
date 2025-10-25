@@ -33,7 +33,7 @@ export const handleCommand = (command: RespCommand, connection: Socket) => {
 
   if (cmd in observersCommandHandlers) {
     const handler = observersCommandHandlers[cmd as ObserversCommands];
-    return handler(command, connection);
+    return connection.write(handler(command, connection));
   }
 
   if (cmd in commandHandlers) {
