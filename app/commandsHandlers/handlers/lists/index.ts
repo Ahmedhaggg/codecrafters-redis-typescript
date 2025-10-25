@@ -162,6 +162,8 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
 
         if (result) {
           return RespEncoder.encodeNil();
+        } else {
+          return RespEncoder.encodeNil();
         }
       }, timeout * 1000);
     }
