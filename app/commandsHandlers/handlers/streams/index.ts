@@ -97,7 +97,7 @@ const validateId = (
 
 const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: string) => {
   if (id == "*") {
-    const unixTimestamp = Math.floor(Date.now() / 1000);
+    const unixTimestamp = Math.floor(Date.now());
 
     return `${unixTimestamp}-0`;
   }
