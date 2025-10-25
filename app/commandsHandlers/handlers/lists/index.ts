@@ -156,13 +156,16 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
       timeout: timeout,
     });
 
-    setTimeout(() => {
-      const result = observerManager.remove(observerId);
+    if (timeout !== 0) {
+      setTimeout(() => {
+        const result = observerManager.remove(observerId);
 
-      if (result) {
-        return RespEncoder.encodeNil();
-      }
-    }, timeout * 1000);
+        if (result) {
+          return RespEncoder.encodeNil();
+        }
+      }, timeout * 1000);
+    }
+
     return;
   }
 
