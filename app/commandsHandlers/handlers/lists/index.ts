@@ -144,7 +144,7 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
 
   const listName = args[0].value;
   const timeout = parseFloat(args[1].value) || 0;
-  console.log("timeout", timeout);
+
   const list = (StoreManager.get().get(listName) as string[]) ?? [];
 
   const val = list[0];
@@ -156,7 +156,7 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
       timeout: timeout,
     });
 
-    if (timeout !== 0) {
+    if (timeout) {
       setTimeout(() => {
         const result = observerManager.remove(observerId);
 

@@ -26,7 +26,7 @@ export class ObserverManager {
       this.observers = this.observers.filter((observer) => observer.id !== id);
     }
 
-    return observer ? true : false;
+    return observer ?? null;
   }
 
   notifyFirst(key: string, value: string) {
