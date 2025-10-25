@@ -1,8 +1,10 @@
+import type { Socket } from "net";
 import { RespEncoder } from "../../../resp/encoder";
-import { RespBulkString, type RespCommand } from "../../../resp/objects";
+import { RespBulkString, RespCommand } from "../../../resp/objects";
 import { StoreManager } from "../../../store/store-manager";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
+import { observerManager, ObserverManager } from "../../../store/observers-manager";
 
 export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
   // Check that command has args
@@ -24,6 +26,8 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
   const newList = dir === 0 ? [...newValues.reverse(), ...list] : [...list, ...newValues];
 
   StoreManager.get().set(listName, newList);
+
+  for (let newValue of newValues) observerManager.notifyFirst(listName, RespEncoder.encodeString(newValue));
 
   return RespEncoder.encodeInteger(newList.length);
 };
@@ -124,4 +128,42 @@ export const lPop = (command: RespCommand) => {
   StoreManager.get().set(listName, list.slice(1));
 
   return RespEncoder.encodeString(firstItem);
+};
+
+export const pLPop = (command: RespCommand, connection: Socket) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+
+  // Narrow to RespBulkString[]
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const listName = args[0].value;
+  const timeout = parseInt(args[1].value) || 0;
+
+  const list = (StoreManager.get().get(listName) as string[]) ?? [];
+
+  const val = list[0];
+
+  if (!val) {
+    const observerId = observerManager.add({
+      connection: connection,
+      key: listName,
+      timeout: timeout,
+    });
+
+    setTimeout(() => {
+      const result = observerManager.remove(observerId);
+
+      if (result) {
+        return RespEncoder.encodeNil();
+      }
+    }, timeout * 1000);
+  }
+
+  return RespEncoder.encodeString(val);
 };

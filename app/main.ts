@@ -10,14 +10,13 @@ const server = net.createServer((connection) => {
 
     const command = decoder.decode();
 
-    console.log(command);
+    console.log("command", command);
     if (command instanceof RespCommand !== true) {
       connection.write("-ERR unknown command\r\n");
       return;
     }
 
-    const res = handleCommand(command);
-    return connection.write(res);
+    handleCommand(command, connection);
   });
 });
 
