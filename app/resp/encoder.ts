@@ -10,8 +10,8 @@ export class RespEncoder {
     return `$${data.length}\r\n${data}\r\n`;
   }
 
-  public static encodeError(data: string): string {
-    return `-ERR ${data.length}\r\n${data}\r\n`;
+  public static encodeError(message: string): string {
+    return `-ERR ${message}\r\n`;
   }
 
   public static encodeInteger(data: number): string {

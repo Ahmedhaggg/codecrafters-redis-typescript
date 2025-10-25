@@ -27,6 +27,7 @@ export const xAdd = (command: RespCommand) => {
 
   // Validate ID properly
   const validation = validateId(xAddList, id);
+
   if (!validation.valid) {
     return RespEncoder.encodeError(validation.error!);
   }
