@@ -11,27 +11,83 @@ export const xAdd = (command: RespCommand) => {
 
   const args = command.args;
 
-  // Narrow to RespBulkString[]
   if (!isBulkStringArray(args)) {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
   const [listName, id, ...newValues] = args.map((a) => (a as RespBulkString).value);
 
-  const formattedValues = newValues.reduce((acc, val, i) => {
-    if (i % 2 == 0) acc[val] = acc[val + 1];
-    return acc;
-  }, {} as Record<string, string>);
+  // Fix key-value parsing
+  const formattedValues: Record<string, string> = {};
+  for (let i = 0; i < newValues.length; i += 2) {
+    formattedValues[newValues[i]] = newValues[i + 1];
+  }
 
-  let xAddList = StoreManager.get().get(listName) as Map<string, Record<string, string>>;
+  let xAddList = StoreManager.get().get(listName) as Map<string, Record<string, string>> | undefined;
+
+  // Validate ID properly
+  const validation = validateId(xAddList, id);
+  if (!validation.valid) {
+    return RespEncoder.encodeError(validation.error!);
+  }
 
   if (!xAddList) {
     xAddList = new Map<string, Record<string, string>>();
-    xAddList.set(id, formattedValues);
-  } else {
-    xAddList.set(id, formattedValues);
   }
 
+  xAddList.set(id, formattedValues);
   StoreManager.get().set(listName, xAddList);
+
   return RespEncoder.encodeString(id);
+};
+
+const validateId = (
+  xAddList: Map<string, Record<string, string>> | undefined,
+  newId: string
+): { valid: boolean; error?: string } => {
+  const parts = newId.split("-");
+
+  if (parts.length !== 2) {
+    return { valid: false, error: "Invalid ID format" };
+  }
+
+  const [timestamp, sequence] = parts.map((part) => parseInt(part, 10));
+
+  if (Number.isNaN(timestamp) || Number.isNaN(sequence)) {
+    return { valid: false, error: "Invalid ID format" };
+  }
+
+  // Rule: cannot be 0-0
+  if (timestamp === 0 && sequence === 0) {
+    return { valid: false, error: "The ID specified in XADD must be greater than 0-0" };
+  }
+
+  // If the stream is empty → only needs to be > 0-0
+  if (!xAddList || xAddList.size === 0) {
+    if (timestamp === 0 && sequence <= 0) {
+      return { valid: false, error: "The ID specified in XADD must be greater than 0-0" };
+    }
+    return { valid: true };
+  }
+
+  // Get the last ID in the stream
+  const lastKey = Array.from(xAddList.keys()).pop()!;
+  const [lastTimestamp, lastSequence] = lastKey.split("-").map((part) => parseInt(part, 10));
+
+  // Must be strictly greater
+  if (timestamp < lastTimestamp) {
+    return {
+      valid: false,
+      error: "The ID specified in XADD is equal or smaller than the target stream top item",
+    };
+  }
+
+  if (timestamp === lastTimestamp && sequence <= lastSequence) {
+    return {
+      valid: false,
+      error: "The ID specified in XADD is equal or smaller than the target stream top item",
+    };
+  }
+
+  return { valid: true };
 };
