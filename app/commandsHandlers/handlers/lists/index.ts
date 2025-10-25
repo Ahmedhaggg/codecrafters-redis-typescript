@@ -163,6 +163,7 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
         return RespEncoder.encodeNil();
       }
     }, timeout * 1000);
+    return;
   }
 
   return RespEncoder.encodeArray([listName, val]);
