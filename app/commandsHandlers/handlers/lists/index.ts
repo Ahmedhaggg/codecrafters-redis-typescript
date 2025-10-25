@@ -169,4 +169,6 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
       }
     }, timeout * 1000);
   }
+
+  return RespEncoder.encodeNullArray();
 };
