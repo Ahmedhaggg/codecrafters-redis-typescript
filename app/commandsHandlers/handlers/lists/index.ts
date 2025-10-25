@@ -27,7 +27,7 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
 
   StoreManager.get().set(listName, newList);
 
-  for (let newValue of newValues) observerManager.notifyFirst(listName, RespEncoder.encodeString(newValue));
+  for (let newValue of newValues) observerManager.notifyFirst(listName, RespEncoder.encodeArray([listName, newValue]));
 
   return RespEncoder.encodeInteger(newList.length);
 };
@@ -165,5 +165,5 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
     }, timeout * 1000);
   }
 
-  return RespEncoder.encodeString(val);
+  return RespEncoder.encodeArray([listName, val]);
 };
