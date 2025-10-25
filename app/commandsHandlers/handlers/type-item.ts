@@ -14,5 +14,12 @@ export const typeKey = (command: RespCommand) => {
 
   const value = StoreManager.get().get(keyName);
 
-  return RespEncoder.encodeSimpleString(value ? typeof value : "none");
+  return RespEncoder.encodeSimpleString(value ? mapTypeOf(value) : "none");
+};
+
+const mapTypeOf = (key: any) => {
+  const t = typeof key;
+
+  if (t == "object") return "stream";
+  else return t;
 };

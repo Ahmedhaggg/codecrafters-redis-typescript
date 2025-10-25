@@ -53,7 +53,8 @@ export type CommandName =
   | "LLEN"
   | "LPOP"
   | "BLPOP"
-  | "TYPE";
+  | "TYPE"
+  | "XADD";
 
 export class RespCommand extends RespObject {
   constructor(raw: Buffer, public readonly command: CommandName, public readonly args: RespObject[] | null) {
@@ -74,4 +75,5 @@ export const COMMANDS: CommandName[] = [
   "LPOP",
   "BLPOP",
   "TYPE",
+  "XADD",
 ];
