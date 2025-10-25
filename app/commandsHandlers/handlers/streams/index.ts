@@ -32,5 +32,6 @@ export const xAdd = (command: RespCommand) => {
     xAddList.set(id, formattedValues);
   }
 
+  StoreManager.get().set(listName, xAddList);
   return RespEncoder.encodeString(id);
 };
