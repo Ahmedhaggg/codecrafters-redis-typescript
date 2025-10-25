@@ -152,6 +152,7 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
   if (val) {
     return RespEncoder.encodeArray([listName, val]);
   }
+
   const observerId = observerManager.add({
     connection: connection,
     key: listName,
@@ -167,6 +168,4 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
       }
     }, timeout * 1000);
   }
-
-  return;
 };
