@@ -168,8 +168,8 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
       }, timeout * 1000);
     }
 
-    return;
+    return RespEncoder.encodeNil();
+  } else {
+    return RespEncoder.encodeArray([listName, val]);
   }
-
-  return RespEncoder.encodeArray([listName, val]);
 };
