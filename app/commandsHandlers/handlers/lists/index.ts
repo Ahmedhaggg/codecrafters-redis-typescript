@@ -162,13 +162,11 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
     setTimeout(() => {
       const result = observerManager.remove(observerId);
 
-      if (result) {
-        connection.write(RespEncoder.encodeNullArray()); // <-- FIXED HERE
-      } else {
-        connection.write(RespEncoder.encodeNullArray()); // same here
+      if (!result) {
+        connection.write(RespEncoder.encodeNullArray());
       }
     }, timeout * 1000);
   }
 
-  return RespEncoder.encodeNullArray();
+  return;
 };
