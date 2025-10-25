@@ -128,5 +128,11 @@ const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: s
     return `${timestamp}-${1}`;
   }
 
-  return `${timestamp}-${parseInt(lastKey.split("-")[1]) + 1}`;
+  const [lastKeyTimestamp, lastKeySequence] = lastKey.split("-");
+
+  if (timestamp == lastKeyTimestamp) {
+    return `${timestamp}-${parseInt(lastKey.split("-")[1]) + 1}`;
+  }
+
+  return `${timestamp}-0`;
 };
