@@ -7,6 +7,7 @@ import { get } from "./handlers/get";
 import { lRange, rPush, lPush, lLen, lPop, pLPop } from "./handlers/lists";
 import { ping } from "./handlers/ping";
 import { set } from "./handlers/set";
+import { typeKey } from "./handlers/type-item";
 
 type ReqResCommands = Exclude<CommandName, "BLPOP">;
 type ObserversCommands = Extract<CommandName, "BLPOP">;
@@ -22,6 +23,7 @@ const commandHandlers = {
   LPUSH: lPush,
   LLEN: lLen,
   LPOP: lPop,
+  TYPE: typeKey,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
