@@ -149,27 +149,22 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
 
   const val = list[0];
 
-  if (!val) {
-    const observerId = observerManager.add({
-      connection: connection,
-      key: listName,
-      timeout: timeout,
-    });
-
-    if (timeout) {
-      setTimeout(() => {
-        const result = observerManager.remove(observerId);
-
-        if (result) {
-          return RespEncoder.encodeNil();
-        } else {
-          return RespEncoder.encodeNil();
-        }
-      }, timeout * 1000);
-    }
-
-    return RespEncoder.encodeNil();
-  } else {
+  if (val) {
     return RespEncoder.encodeArray([listName, val]);
+  }
+  const observerId = observerManager.add({
+    connection: connection,
+    key: listName,
+    timeout: timeout,
+  });
+
+  if (timeout) {
+    setTimeout(() => {
+      const result = observerManager.remove(observerId);
+
+      if (result) {
+        return RespEncoder.encodeNullArray();
+      }
+    }, timeout * 1000);
   }
 };
