@@ -183,23 +183,21 @@ export const xRead = (command: RespCommand) => {
 
   const [_, ...params] = args.map((arg) => (arg as RespBulkString).value);
 
-  let resp = `*1\r\n`;
-
   const keys = params.slice(0, params.length / 2);
   const ids = params.slice(params.length / 2);
-  console.log("keys.length ", keys.length);
-  console.log("ids.length ", ids.length);
+
+  let resp = `*${keys.length}\r\n`;
+
   keys.forEach((key, i) => {
     const start = ids[i];
-    console.log("start ", start);
+
     const stream = StoreManager.get().get(key) as Stream;
 
-    console.log("stream ", stream);
     if (!stream) return RespEncoder.encodeNullArray();
 
     const values = Array.from(stream.entries()).filter(([id]) => id > start);
 
-    console.log("values ", values);
+    resp += `*2\r\n`;
     resp += RespEncoder.encodeString(key);
     resp += `*${values.length}\r\n`;
 
