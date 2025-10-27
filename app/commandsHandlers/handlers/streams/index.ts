@@ -156,8 +156,7 @@ export const xRange = (command: RespCommand) => {
   const endTs = parseInt(end);
 
   const values = Array.from(stream.entries()).filter(([id]) => {
-    const iTs = parseInt(id.split("-")[0]);
-    return iTs >= startTs && iTs <= endTs;
+    return id >= start && id <= end;
   });
 
   let resp = `*${values.length}\r\n`;
