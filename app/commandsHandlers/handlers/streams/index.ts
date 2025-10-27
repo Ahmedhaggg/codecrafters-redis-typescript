@@ -188,6 +188,8 @@ export const xRead = (command: RespCommand) => {
   const keys = params.slice(0, params.length / 2);
   const ids = params.slice(params.length / 2);
 
+  resp += `${keys.length}\r\n`;
+
   keys.forEach((key, i) => {
     const start = ids[i];
     const stream = StoreManager.get().get(key) as Stream;
