@@ -4,6 +4,8 @@ import { StoreManager } from "../../../store/store-manager";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
 
+type Stream = Map<string, Record<string, string>>;
+
 export const xAdd = (command: RespCommand) => {
   if (!isContainsArgs(command)) {
     return RespEncoder.encodeError("Invalid key or value");
@@ -129,4 +131,38 @@ const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: s
   }
 
   return `${timestamp}-0`;
+};
+
+export const xRange = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const [key, start, end] = args.map((arg) => (arg as RespBulkString).value);
+
+  const stream = StoreManager.get().get(key) as Stream;
+
+  const startTs = parseInt(start);
+  const endTs = parseInt(end);
+
+  const values = Array.from(stream.entries()).filter(([id]) => {
+    const iTs = parseInt(id.split("-")[0]);
+    return iTs >= startTs && iTs <= endTs;
+  });
+
+  const encodedEntries = values.map(([id, fields]) => {
+    const fieldPairs = Object.entries(fields).flatMap(([field, value]) => [field, value]);
+
+    const encodedFields = RespEncoder.encodeArray(fieldPairs);
+
+    return RespEncoder.encodeArray([id, encodedFields]);
+  });
+
+  return RespEncoder.encodeArray(encodedEntries);
 };
