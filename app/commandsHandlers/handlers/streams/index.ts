@@ -169,3 +169,41 @@ export const xRange = (command: RespCommand) => {
 
   return resp;
 };
+
+export const xRead = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const [_, key, start] = args.map((arg) => (arg as RespBulkString).value);
+
+  const stream = StoreManager.get().get(key) as Stream;
+
+  if (!stream) {
+    return RespEncoder.encodeNullArray();
+  }
+
+  const values = Array.from(stream.entries()).filter(([id]) => id > start);
+
+  let resp = `*1\r\n`;
+  resp += `*2\r\n`;
+  resp += RespEncoder.encodeString(key);
+  resp += `*${values.length}\r\n`;
+
+  for (const [id, fields] of values) {
+    const fieldPairs = Object.entries(fields).flatMap(([field, value]) => [field, value]);
+
+    // Outer array = 2 elements: id + fields array
+    resp += `*2\r\n`;
+    resp += RespEncoder.encodeString(id);
+    resp += RespEncoder.encodeArray(fieldPairs);
+  }
+
+  return resp;
+};
