@@ -181,29 +181,33 @@ export const xRead = (command: RespCommand) => {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
-  const [_, key, start] = args.map((arg) => (arg as RespBulkString).value);
-
-  const stream = StoreManager.get().get(key) as Stream;
-
-  if (!stream) {
-    return RespEncoder.encodeNullArray();
-  }
-
-  const values = Array.from(stream.entries()).filter(([id]) => id > start);
+  const [_, ...params] = args.map((arg) => (arg as RespBulkString).value);
 
   let resp = `*1\r\n`;
-  resp += `*2\r\n`;
-  resp += RespEncoder.encodeString(key);
-  resp += `*${values.length}\r\n`;
 
-  for (const [id, fields] of values) {
-    const fieldPairs = Object.entries(fields).flatMap(([field, value]) => [field, value]);
+  const keys = params.slice(0, params.length / 2);
+  const ids = params.slice(params.length / 2);
 
-    // Outer array = 2 elements: id + fields array
-    resp += `*2\r\n`;
-    resp += RespEncoder.encodeString(id);
-    resp += RespEncoder.encodeArray(fieldPairs);
-  }
+  keys.forEach((key, i) => {
+    const start = ids[i];
+    const stream = StoreManager.get().get(key) as Stream;
+
+    if (!stream) return RespEncoder.encodeNullArray();
+
+    const values = Array.from(stream.entries()).filter(([id]) => id > start);
+
+    resp += RespEncoder.encodeString(key);
+    resp += `*${values.length}\r\n`;
+
+    for (const [id, fields] of values) {
+      const fieldPairs = Object.entries(fields).flatMap(([field, value]) => [field, value]);
+
+      // Outer array = 2 elements: id + fields array
+      resp += `*2\r\n`;
+      resp += RespEncoder.encodeString(id);
+      resp += RespEncoder.encodeArray(fieldPairs);
+    }
+  });
 
   return resp;
 };
