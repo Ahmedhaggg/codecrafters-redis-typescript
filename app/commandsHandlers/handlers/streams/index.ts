@@ -148,6 +148,10 @@ export const xRange = (command: RespCommand) => {
 
   const stream = StoreManager.get().get(key) as Stream;
 
+  if (!stream) {
+    return RespEncoder.encodeNullArray();
+  }
+
   const startTs = parseInt(start);
   const endTs = parseInt(end);
 
@@ -156,13 +160,16 @@ export const xRange = (command: RespCommand) => {
     return iTs >= startTs && iTs <= endTs;
   });
 
-  const encodedEntries = values.map(([id, fields]) => {
+  let resp = `*${values.length}\r\n`;
+
+  for (const [id, fields] of values) {
     const fieldPairs = Object.entries(fields).flatMap(([field, value]) => [field, value]);
 
-    const encodedFields = RespEncoder.encodeArray(fieldPairs);
+    // Outer array = 2 elements: id + fields array
+    resp += `*2\r\n`;
+    resp += RespEncoder.encodeString(id);
+    resp += RespEncoder.encodeArray(fieldPairs);
+  }
 
-    return RespEncoder.encodeArray([id, encodedFields]);
-  });
-
-  return RespEncoder.encodeArray(encodedEntries);
+  return resp;
 };
