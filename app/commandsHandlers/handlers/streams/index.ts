@@ -152,12 +152,9 @@ export const xRange = (command: RespCommand) => {
     return RespEncoder.encodeNullArray();
   }
 
-  const startTs = parseInt(start);
-  const endTs = parseInt(end);
+  const cond = end == "+" ? (id: string) => id >= start : (id: string) => id >= start && id <= end;
 
-  const values = Array.from(stream.entries()).filter(([id]) => {
-    return id >= start && id <= end;
-  });
+  const values = Array.from(stream.entries()).filter(([id]) => cond(id));
 
   let resp = `*${values.length}\r\n`;
 
