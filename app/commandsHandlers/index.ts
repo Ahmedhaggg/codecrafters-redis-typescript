@@ -9,6 +9,7 @@ import { ping } from "./handlers/ping";
 import { set } from "./handlers/set";
 import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
+import { incr } from "./handlers/transactions";
 
 type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD">;
 type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;
@@ -27,6 +28,7 @@ const commandHandlers = {
   TYPE: typeKey,
   XADD: xAdd,
   XRANGE: xRange,
+  INCR: incr,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
