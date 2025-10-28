@@ -155,6 +155,15 @@ export const xRead = (command: RespCommand, connection: Socket) => {
     const startId = ids[i];
     const stream = StoreManager.get().get(key) as Map<string, Record<string, string>> | undefined;
 
+    if (startId === "$") {
+      if (timeoutSeconds !== null) {
+        observerManager.add({ connection, key, timeout: timeoutSeconds });
+        return;
+      } else {
+        return RespEncoder.encodeNullArray();
+      }
+    }
+
     if (stream) {
       const newEntries = Array.from(stream.entries()).filter(([id]) => id > startId);
       if (newEntries.length) {
