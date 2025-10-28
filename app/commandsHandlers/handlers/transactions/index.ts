@@ -31,11 +31,7 @@ export const multi = (command: RespCommand) => {
   if (!isContainsArgs(command)) {
     return RespEncoder.encodeError("Invalid key or value");
   }
-
   const args = command.args;
-  if (!isBulkStringArray(args)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
 
   const argsValues = args.map((arg) => (arg as RespBulkString).value);
 
@@ -45,6 +41,10 @@ export const multi = (command: RespCommand) => {
 
   if (command.command == "EXEC") {
     return RespEncoder.encodeError("EXEC without MULTI");
+  }
+
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
   }
 
   return RespEncoder.encodeSimpleString("OK");
