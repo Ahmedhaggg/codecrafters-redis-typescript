@@ -8,6 +8,38 @@ import { observerManager } from "../../../store/observers-manager";
 
 type Stream = Map<string, Record<string, string>>;
 
+const encodeStreamEntry = (id: string, fields: Record<string, string>): string => {
+  // each field and value must be encoded as bulk strings
+  const flatFields = Object.entries(fields).flatMap(([k, v]) => [
+    RespEncoder.encodeString(k),
+    RespEncoder.encodeString(v),
+  ]);
+
+  const fieldsArray = RespEncoder.encodeArray(flatFields);
+  const entry = RespEncoder.encodeArray([RespEncoder.encodeString(id), fieldsArray]);
+
+  return entry;
+};
+
+const encodeStreamResponse = (streamName: string, entries: [string, Record<string, string>][]): string => {
+  // single stream response: [ [ streamName, [ entries... ] ] ]
+  const encodedEntries = entries.map(([id, fields]) => encodeStreamEntry(id, fields));
+  const entriesArray = RespEncoder.encodeArray(encodedEntries);
+  const streamArray = RespEncoder.encodeArray([RespEncoder.encodeString(streamName), entriesArray]);
+  return RespEncoder.encodeArray([streamArray]); // outer array (list of streams) containing one stream
+};
+
+const encodeMultipleStreamResponse = (streams: [string, [string, Record<string, string>][]][]): string => {
+  // streams: [ [streamName, [ [id, fields], ... ] ], ... ]
+  const encodedStreams = streams.map(([streamName, entries]) => {
+    const encodedEntries = entries.map(([id, fields]) => encodeStreamEntry(id, fields));
+    const entriesArray = RespEncoder.encodeArray(encodedEntries);
+    return RespEncoder.encodeArray([RespEncoder.encodeString(streamName), entriesArray]);
+  });
+
+  return RespEncoder.encodeArray(encodedStreams); // outer array containing each stream-array
+};
+
 export const xAdd = (command: RespCommand) => {
   if (!isContainsArgs(command)) {
     return RespEncoder.encodeError("Invalid key or value");
@@ -41,10 +73,140 @@ export const xAdd = (command: RespCommand) => {
   StoreManager.get().set(listName, stream);
 
   // Notify the first blocked reader (if any) for this stream key
+  // Note: observerManager.notifyFirst should find an observer waiting on this key and write the provided resp.
   const resp = encodeStreamResponse(listName, [[ID, formattedValues]]);
   observerManager.notifyFirst(listName, resp);
 
   return RespEncoder.encodeString(ID);
+};
+
+export const xRange = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const [key, start, end] = args.map((arg) => (arg as RespBulkString).value);
+
+  const stream = StoreManager.get().get(key) as Stream;
+  if (!stream) {
+    return RespEncoder.encodeNullArray();
+  }
+
+  const cond = end === "+" ? (id: string) => id >= start : (id: string) => id >= start && id <= end;
+  const values = Array.from(stream.entries()).filter(([id]) => cond(id));
+
+  const encodedEntries = values.map(([id, fields]) => encodeStreamEntry(id, fields));
+  return RespEncoder.encodeArray(encodedEntries);
+};
+
+export const xRead = (command: RespCommand, connection: Socket) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  // preserve original values and a uppercase copy for keyword detection
+  const values = args.map((a) => (a as RespBulkString).value);
+  const valuesUpper = values.map((v) => v.toUpperCase());
+
+  // find BLOCK (case-insensitive)
+  const blockIndex = valuesUpper.indexOf("BLOCK");
+
+  // If BLOCK exists, parse timeout (milliseconds) and remove both tokens from values
+  let timeoutSeconds: number | null = null; // null => no blocking requested
+  if (blockIndex !== -1) {
+    const rawTimeout = values[blockIndex + 1];
+    const timeoutMs = parseFloat(rawTimeout || "0") || 0;
+    timeoutSeconds = timeoutMs / 1000;
+    // remove the BLOCK token and its timeout value from both arrays
+    values.splice(blockIndex, 2);
+    valuesUpper.splice(blockIndex, 2);
+  }
+
+  // find STREAMS (case-insensitive)
+  const streamsIndex = valuesUpper.indexOf("STREAMS");
+  if (streamsIndex === -1) {
+    return RespEncoder.encodeError("Invalid XREAD syntax: STREAMS expected");
+  }
+
+  const afterStreams = values.slice(streamsIndex + 1);
+  const half = afterStreams.length / 2;
+  if (!Number.isInteger(half) || half <= 0) {
+    return RespEncoder.encodeError("Invalid XREAD syntax: keys and ids mismatch");
+  }
+
+  const keys = afterStreams.slice(0, half);
+  const ids = afterStreams.slice(half);
+
+  // collect entries for all streams
+  const streamsWithEntries: [string, [string, Record<string, string>][]][] = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const startId = ids[i];
+    const stream = StoreManager.get().get(key) as Map<string, Record<string, string>> | undefined;
+
+    if (stream) {
+      const newEntries = Array.from(stream.entries()).filter(([id]) => id > startId);
+      if (newEntries.length) {
+        streamsWithEntries.push([key, newEntries]);
+      }
+    }
+  }
+
+  // If any stream has entries — return them all together
+  if (streamsWithEntries.length) {
+    return encodeMultipleStreamResponse(streamsWithEntries);
+  }
+
+  // No stream had new entries — if BLOCK requested, register per-key observers
+  if (timeoutSeconds !== null) {
+    // register an observer for each key so when any key receives an XADD it can notify
+    // store observer ids and their timers so we can clean them if necessary
+    const observerRegistrations: { key: string; id: string; timer?: NodeJS.Timeout }[] = [];
+
+    for (const key of keys) {
+      const observerId = observerManager.add({
+        connection,
+        key,
+        timeout: timeoutSeconds,
+      } as any); // cast to any in case observerManager type is narrower
+
+      // schedule timeout only when > 0 (BLOCK 0 we treat as indefinite wait)
+      if (timeoutSeconds > 0) {
+        const timer = setTimeout(() => {
+          const removed = observerManager.remove(observerId);
+          if (removed) {
+            try {
+              connection.write(RespEncoder.encodeNullArray());
+            } catch {
+              // ignore write errors
+            }
+          }
+        }, timeoutSeconds * 1000);
+
+        observerRegistrations.push({ key, id: observerId, timer });
+      } else {
+        // indefinite wait (BLOCK 0) — no timer scheduled
+        observerRegistrations.push({ key, id: observerId });
+      }
+    }
+
+    // return without writing — client stays blocked
+    return;
+  }
+
+  // non-blocking and no data → return null
+  return RespEncoder.encodeNullArray();
 };
 
 const validateId = (
@@ -101,7 +263,6 @@ const validateId = (
 const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: string) => {
   if (id == "*") {
     const unixTimestamp = Math.floor(Date.now());
-
     return `${unixTimestamp}-0`;
   }
 
@@ -111,166 +272,21 @@ const makeId = (xAddList: Map<string, Record<string, string>> | undefined, id: s
 
   if (timestamp == "*") {
     const lastKey = Array.from(xAddList?.keys() ?? []).pop();
-
     if (!lastKey) {
       return `0-${sequence}`;
     }
-
     return `${parseInt(lastKey.split("-")[0]) + 1}-${sequence}`;
   }
 
   const lastKey = Array.from(xAddList?.keys() ?? []).pop();
-
   if (!lastKey) {
     return `${timestamp}-${1}`;
   }
 
-  const [lastKeyTimestamp, lastKeySequence] = lastKey.split("-");
-
+  const [lastKeyTimestamp] = lastKey.split("-");
   if (timestamp == lastKeyTimestamp) {
     return `${timestamp}-${parseInt(lastKey.split("-")[1]) + 1}`;
   }
 
   return `${timestamp}-0`;
-};
-
-export const xRange = (command: RespCommand) => {
-  if (!isContainsArgs(command)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
-
-  const args = command.args;
-
-  if (!isBulkStringArray(args)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
-
-  const [key, start, end] = args.map((arg) => (arg as RespBulkString).value);
-
-  const stream = StoreManager.get().get(key) as Stream;
-
-  if (!stream) {
-    return RespEncoder.encodeNullArray();
-  }
-
-  const cond = end == "+" ? (id: string) => id >= start : (id: string) => id >= start && id <= end;
-
-  const values = Array.from(stream.entries()).filter(([id]) => cond(id));
-
-  const encodedEntries = values.map(([id, fields]) => encodeStreamEntry(id, fields));
-  return RespEncoder.encodeArray(encodedEntries);
-};
-
-export const xRead = (command: RespCommand, connection: Socket) => {
-  if (!isContainsArgs(command)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
-
-  const args = command.args;
-  if (!isBulkStringArray(args)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
-
-  // original values (case preserved) and uppercase map for keyword lookup
-  const values = args.map((a) => (a as RespBulkString).value);
-  const valuesUpper = values.map((v) => v.toUpperCase());
-
-  // find BLOCK (case-insensitive)
-  const blockIndex = valuesUpper.indexOf("BLOCK");
-
-  // If BLOCK exists, parse timeout (milliseconds) and remove both tokens from values
-  let timeoutSeconds: number | null = null; // null => no blocking requested
-  if (blockIndex !== -1) {
-    const rawTimeout = values[blockIndex + 1];
-    // if no explicit value provided, Redis would treat it as syntax error; here we tolerate it as 0
-    const timeoutMs = parseFloat(rawTimeout || "0") || 0;
-    timeoutSeconds = timeoutMs / 1000;
-    // remove the BLOCK and its value from both arrays
-    values.splice(blockIndex, 2);
-    valuesUpper.splice(blockIndex, 2);
-  }
-
-  // find STREAMS (case-insensitive) after removal
-  const streamsIndex = valuesUpper.indexOf("STREAMS");
-  if (streamsIndex === -1) {
-    return RespEncoder.encodeError("Invalid XREAD syntax: STREAMS expected");
-  }
-
-  // The remaining tokens after STREAMS are: <key1> <key2> ... <id1> <id2> ...
-  const afterStreams = values.slice(streamsIndex + 1);
-  const half = afterStreams.length / 2;
-  if (!Number.isInteger(half) || half <= 0) {
-    return RespEncoder.encodeError("Invalid XREAD syntax: keys and ids mismatch");
-  }
-
-  const keys = afterStreams.slice(0, half);
-  const ids = afterStreams.slice(half);
-
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const startId = ids[i];
-    const stream = StoreManager.get().get(key) as Map<string, Record<string, string>> | undefined;
-
-    if (stream) {
-      const newEntries = Array.from(stream.entries()).filter(([id]) => id > startId);
-      if (newEntries.length) {
-        return encodeStreamResponse(key, newEntries);
-      }
-    }
-
-    // no new entries for this key
-    // Register blocking only if BLOCK was explicitly requested
-    if (timeoutSeconds !== null) {
-      const observerId = observerManager.add({
-        connection,
-        key,
-        timeout: timeoutSeconds,
-      });
-
-      // schedule the timeout only if it's > 0; if 0 => immediate timeout (client expects immediate return?)
-      if (timeoutSeconds > 0) {
-        setTimeout(() => {
-          const removed = observerManager.remove(observerId);
-          if (removed) {
-            try {
-              connection.write(RespEncoder.encodeNullArray());
-            } catch (err) {
-              // ignore write errors
-            }
-          }
-        }, timeoutSeconds * 1000);
-      } else if (timeoutSeconds === 0) {
-        // BLOCK 0 means wait forever in Redis; but if you intended 0ms timeout, handle accordingly.
-        // Here, we treat 0 as "no wait" — but if you want infinite wait, don't schedule removal.
-        // To emulate Redis BLOCK 0 semantics, comment out the else-if and don't schedule a timeout.
-      }
-
-      return; // client is blocked — return without writing anything now
-    }
-  }
-
-  // non-blocking and no data -> return null array
-  return RespEncoder.encodeNullArray();
-};
-
-const encodeStreamEntry = (id: string, fields: Record<string, string>): string => {
-  const flatFields = Object.entries(fields).flatMap(([k, v]) => [
-    RespEncoder.encodeString(k),
-    RespEncoder.encodeString(v),
-  ]);
-
-  const fieldsArray = RespEncoder.encodeArray(flatFields);
-  const entry = RespEncoder.encodeArray([RespEncoder.encodeString(id), fieldsArray]);
-
-  return entry;
-};
-
-const encodeStreamResponse = (streamName: string, entries: [string, Record<string, string>][]): string => {
-  const encodedEntries = entries.map(([id, fields]) => encodeStreamEntry(id, fields));
-  const entriesArray = RespEncoder.encodeArray(encodedEntries);
-
-  const streamArray = RespEncoder.encodeArray([RespEncoder.encodeString(streamName), entriesArray]);
-
-  // outer array (list of streams) — only one stream for now
-  return RespEncoder.encodeArray([streamArray]);
 };
