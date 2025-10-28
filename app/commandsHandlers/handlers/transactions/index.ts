@@ -28,12 +28,9 @@ export const incr = (command: RespCommand) => {
 };
 
 export const multi = (command: RespCommand) => {
-  if (!isContainsArgs(command)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
   const args = command.args;
 
-  const argsValues = args.map((arg) => (arg as RespBulkString).value);
+  const argsValues = args?.map((arg) => (arg as RespBulkString).value);
 
   console.log("multtttttttttttttttttttttttttttttttt");
   console.log(argsValues);
