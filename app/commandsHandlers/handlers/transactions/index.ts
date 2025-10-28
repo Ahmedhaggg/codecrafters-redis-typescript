@@ -30,6 +30,7 @@ export const incr = (command: RespCommand) => {
 };
 
 export const multi = (command: RespCommand, connection: Socket) => {
+  transactionManager.start(connection);
   return RespEncoder.encodeSimpleString("OK");
 };
 
