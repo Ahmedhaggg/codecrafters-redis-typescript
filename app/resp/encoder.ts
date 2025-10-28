@@ -19,7 +19,7 @@ export class RespEncoder {
   }
 
   static encodeArray(values: string[]): string {
-    return `*${values.length}\r\n${values}`;
+    return `*${values.length}\r\n${values.join("")}`;
   }
 
   static encodeNullArray() {
