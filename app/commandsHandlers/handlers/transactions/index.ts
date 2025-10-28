@@ -20,6 +20,8 @@ export const incr = (command: RespCommand) => {
 
   const newValue = (currentValue ? parseInt(currentValue) : 0) + 1;
 
+  if (Number.isNaN(newValue)) return RespEncoder.encodeError("value is not an integer or out of range");
+
   StoreManager.get().set(keyName, newValue);
 
   return RespEncoder.encodeInteger(newValue);
