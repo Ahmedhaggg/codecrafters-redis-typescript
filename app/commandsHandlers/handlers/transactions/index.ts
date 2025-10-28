@@ -42,5 +42,10 @@ export const multi = (command: RespCommand) => {
   console.log("multtttttttttttttttttttttttttttttttt");
   console.log(argsValues);
   console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+
+  if (command.command == "EXEC") {
+    return RespEncoder.encodeError("EXEC without MULTI");
+  }
+
   return RespEncoder.encodeSimpleString("OK");
 };

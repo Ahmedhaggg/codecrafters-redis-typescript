@@ -30,6 +30,7 @@ const commandHandlers = {
   XRANGE: xRange,
   INCR: incr,
   MULTI: multi,
+  EXEC: multi,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {

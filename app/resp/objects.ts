@@ -58,7 +58,8 @@ export type CommandName =
   | "XRANGE"
   | "XREAD"
   | "INCR"
-  | "MULTI";
+  | "MULTI"
+  | "EXEC";
 
 export class RespCommand extends RespObject {
   constructor(raw: Buffer, public readonly command: CommandName, public readonly args: RespObject[] | null) {
@@ -84,4 +85,5 @@ export const COMMANDS: CommandName[] = [
   "XREAD",
   "INCR",
   "MULTI",
+  "EXEC",
 ];
