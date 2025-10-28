@@ -10,6 +10,7 @@ import { set } from "./handlers/set";
 import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
 import { exec, incr, multi } from "./handlers/transactions";
+import { transactionManager } from "../store/transaction-manager";
 
 type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC">;
 type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "EXEC" | "MULTI">;
@@ -40,6 +41,15 @@ const observersCommandHandlers = {
 
 export const handleCommand = (command: RespCommand, connection: Socket) => {
   const cmd = command.command;
+
+  if (transactionManager.haveOpenedTransaction(connection) && cmd !== "EXEC") {
+    const transaction = transactionManager.get(connection)!;
+
+    transaction.queue.push(command);
+
+    transactionManager.update(connection, transaction);
+    return RespEncoder.encodeSimpleString("QUEUED");
+  }
 
   if (cmd in observersCommandHandlers) {
     const handler = observersCommandHandlers[cmd as ObserversCommands];

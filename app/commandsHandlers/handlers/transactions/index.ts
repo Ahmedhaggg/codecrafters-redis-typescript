@@ -5,6 +5,7 @@ import { StoreManager } from "../../../store/store-manager";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
 import { randomUUID } from "crypto";
+import { transactionManager } from "../../../store/transaction-manager";
 
 export const incr = (command: RespCommand) => {
   if (!isContainsArgs(command)) {
@@ -35,37 +36,10 @@ export const multi = (command: RespCommand, connection: Socket) => {
 };
 
 export const exec = (command: RespCommand, connection: Socket) => {
-  if (transactionManager.exec(connection)) return RespEncoder.encodeArray([]);
+  if (transactionManager.haveOpenedTransaction(connection)) {
+    transactionManager.exec(connection);
+    return RespEncoder.encodeArray([]);
+  }
 
   return RespEncoder.encodeError("EXEC without MULTI");
 };
-
-type Transaction = {
-  queue: [];
-};
-
-type SocketWithId = Socket & {
-  id: string;
-};
-
-export class TransactionsManager {
-  private openedTransactions: Map<string, Transaction> = new Map<string, Transaction>();
-
-  start(connection: Socket) {
-    const id = randomUUID();
-    (connection as any).id = id;
-    this.openedTransactions.set(id, { queue: [] });
-  }
-
-  exec(connection: Socket) {
-    const transactionId = (connection as SocketWithId).id;
-
-    if (!transactionId || !this.openedTransactions.get(transactionId)) return false;
-
-    this.openedTransactions.delete(transactionId);
-
-    return true;
-  }
-}
-
-export const transactionManager = new TransactionsManager();
