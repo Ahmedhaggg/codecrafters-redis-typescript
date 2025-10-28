@@ -60,7 +60,7 @@ export const lRange = (command: RespCommand) => {
     return RespEncoder.encodeError("Invalid index keys");
   }
 
-  const list = StoreManager.get().get(listName) ?? [];
+  const list = (StoreManager.get().get(listName) ?? []) as string[];
 
   const listLength = list.length;
 
@@ -74,7 +74,7 @@ export const lRange = (command: RespCommand) => {
 
   if (start > end) return RespEncoder.encodeArray([]);
 
-  const result = list.slice(start, end);
+  const result = list.slice(start, end).map((item) => RespEncoder.encodeString(item));
   return RespEncoder.encodeArray(result);
 };
 
