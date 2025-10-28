@@ -26,3 +26,7 @@ export const incr = (command: RespCommand) => {
 
   return RespEncoder.encodeInteger(newValue);
 };
+
+export const multi = (command: RespCommand) => {
+  return RespEncoder.encodeSimpleString("OK");
+};
