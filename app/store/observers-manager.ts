@@ -30,12 +30,13 @@ export class ObserverManager {
   }
 
   notifyFirst(key: string, value: string) {
-    const observer = this.observers.find((ob) => ob.key == key);
+    const idx = this.observers.findIndex((ob) => ob.key === key);
+    if (idx === -1) return false;
 
-    if (!observer) return;
-
+    const [observer] = this.observers.splice(idx, 1);
     observer.connection.write(value);
-    observer.connection.end();
+
+    return true;
   }
 }
 

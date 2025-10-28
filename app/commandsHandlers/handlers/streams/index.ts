@@ -40,10 +40,8 @@ export const xAdd = (command: RespCommand) => {
   stream.set(ID, formattedValues);
   StoreManager.get().set(listName, stream);
 
-  // 🟢 Notify blocked readers using reusable encoder
-
+  // Notify the first blocked reader (if any) for this stream key
   const resp = encodeStreamResponse(listName, [[ID, formattedValues]]);
-
   observerManager.notifyFirst(listName, resp);
 
   return RespEncoder.encodeString(ID);
@@ -173,23 +171,45 @@ export const xRead = (command: RespCommand, connection: Socket) => {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
+  // original values (case preserved) and uppercase map for keyword lookup
   const values = args.map((a) => (a as RespBulkString).value);
-  const blockIndex = values.indexOf("BLOCK");
+  const valuesUpper = values.map((v) => v.toUpperCase());
 
-  let timeout = 0;
+  // find BLOCK (case-insensitive)
+  const blockIndex = valuesUpper.indexOf("BLOCK");
+
+  // If BLOCK exists, parse timeout (milliseconds) and remove both tokens from values
+  let timeoutSeconds: number | null = null; // null => no blocking requested
   if (blockIndex !== -1) {
-    timeout = parseFloat(values[blockIndex + 1]) / 1000 || 0; // convert ms → sec
+    const rawTimeout = values[blockIndex + 1];
+    // if no explicit value provided, Redis would treat it as syntax error; here we tolerate it as 0
+    const timeoutMs = parseFloat(rawTimeout || "0") || 0;
+    timeoutSeconds = timeoutMs / 1000;
+    // remove the BLOCK and its value from both arrays
     values.splice(blockIndex, 2);
+    valuesUpper.splice(blockIndex, 2);
   }
 
-  const streamsIndex = values.indexOf("STREAMS");
-  const keys = values.slice(streamsIndex + 1, streamsIndex + 1 + (values.length - streamsIndex - 1) / 2);
-  const ids = values.slice(streamsIndex + 1 + keys.length);
+  // find STREAMS (case-insensitive) after removal
+  const streamsIndex = valuesUpper.indexOf("STREAMS");
+  if (streamsIndex === -1) {
+    return RespEncoder.encodeError("Invalid XREAD syntax: STREAMS expected");
+  }
+
+  // The remaining tokens after STREAMS are: <key1> <key2> ... <id1> <id2> ...
+  const afterStreams = values.slice(streamsIndex + 1);
+  const half = afterStreams.length / 2;
+  if (!Number.isInteger(half) || half <= 0) {
+    return RespEncoder.encodeError("Invalid XREAD syntax: keys and ids mismatch");
+  }
+
+  const keys = afterStreams.slice(0, half);
+  const ids = afterStreams.slice(half);
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const startId = ids[i];
-    const stream = StoreManager.get().get(key) as Map<string, Record<string, string>>;
+    const stream = StoreManager.get().get(key) as Map<string, Record<string, string>> | undefined;
 
     if (stream) {
       const newEntries = Array.from(stream.entries()).filter(([id]) => id > startId);
@@ -198,26 +218,38 @@ export const xRead = (command: RespCommand, connection: Socket) => {
       }
     }
 
-    // 🟡 No new messages → register blocking read
-    if (timeout >= 0) {
+    // no new entries for this key
+    // Register blocking only if BLOCK was explicitly requested
+    if (timeoutSeconds !== null) {
       const observerId = observerManager.add({
         connection,
         key,
-        timeout,
+        timeout: timeoutSeconds,
       });
 
-      if (timeout) {
+      // schedule the timeout only if it's > 0; if 0 => immediate timeout (client expects immediate return?)
+      if (timeoutSeconds > 0) {
         setTimeout(() => {
-          const result = observerManager.remove(observerId);
-          if (result) connection.write(RespEncoder.encodeNullArray());
-        }, timeout * 1000);
+          const removed = observerManager.remove(observerId);
+          if (removed) {
+            try {
+              connection.write(RespEncoder.encodeNullArray());
+            } catch (err) {
+              // ignore write errors
+            }
+          }
+        }, timeoutSeconds * 1000);
+      } else if (timeoutSeconds === 0) {
+        // BLOCK 0 means wait forever in Redis; but if you intended 0ms timeout, handle accordingly.
+        // Here, we treat 0 as "no wait" — but if you want infinite wait, don't schedule removal.
+        // To emulate Redis BLOCK 0 semantics, comment out the else-if and don't schedule a timeout.
       }
 
-      return; // block until notified
+      return; // client is blocked — return without writing anything now
     }
   }
 
-  // non-blocking and no data
+  // non-blocking and no data -> return null array
   return RespEncoder.encodeNullArray();
 };
 
