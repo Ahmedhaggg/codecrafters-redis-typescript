@@ -19,8 +19,7 @@ export class RespEncoder {
   }
 
   static encodeArray(values: string[]): string {
-    const encodedValues = values.map((v) => this.encodeString(v)).join("");
-    return `*${values.length}\r\n${encodedValues}`;
+    return `*${values.length}\r\n${values}`;
   }
 
   static encodeNullArray() {

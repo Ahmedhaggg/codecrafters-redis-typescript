@@ -10,8 +10,8 @@ import { set } from "./handlers/set";
 import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
 
-type ReqResCommands = Exclude<CommandName, "BLPOP">;
-type ObserversCommands = Extract<CommandName, "BLPOP">;
+type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD">;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -27,11 +27,11 @@ const commandHandlers = {
   TYPE: typeKey,
   XADD: xAdd,
   XRANGE: xRange,
-  XREAD: xRead,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
   BLPOP: pLPop,
+  XREAD: xRead,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 export const handleCommand = (command: RespCommand, connection: Socket) => {

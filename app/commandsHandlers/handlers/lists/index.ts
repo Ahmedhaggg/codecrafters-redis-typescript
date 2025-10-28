@@ -27,7 +27,11 @@ export const push = (command: RespCommand, dir: 0 | 1 = 1) => {
 
   StoreManager.get().set(listName, newList);
 
-  for (let newValue of newValues) observerManager.notifyFirst(listName, RespEncoder.encodeArray([listName, newValue]));
+  for (let newValue of newValues)
+    observerManager.notifyFirst(
+      listName,
+      RespEncoder.encodeArray([listName, newValue].map((str) => RespEncoder.encodeString(str)))
+    );
 
   return RespEncoder.encodeInteger(newList.length);
 };
@@ -116,11 +120,11 @@ export const lPop = (command: RespCommand) => {
   if (num) {
     const requestNum = Math.min(parseInt(num, 10), list.length);
 
-    const removed = list.slice(0, requestNum);
+    const removed = list.slice(0, requestNum) as string[];
 
     StoreManager.get().set(listName, list.slice(requestNum));
 
-    return RespEncoder.encodeArray(removed);
+    return RespEncoder.encodeArray(removed.map((item) => RespEncoder.encodeString(item)));
   }
 
   const firstItem = list[0];
@@ -150,7 +154,7 @@ export const pLPop = (command: RespCommand, connection: Socket) => {
   const val = list[0];
 
   if (val) {
-    return RespEncoder.encodeArray([listName, val]);
+    return RespEncoder.encodeArray([listName, val].map((item) => RespEncoder.encodeString(item)));
   }
 
   const observerId = observerManager.add({
