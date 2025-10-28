@@ -1,5 +1,5 @@
 import { RespEncoder } from "../../../resp/encoder";
-import type { RespCommand } from "../../../resp/objects";
+import type { RespBulkString, RespCommand } from "../../../resp/objects";
 import { StoreManager } from "../../../store/store-manager";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
@@ -28,5 +28,19 @@ export const incr = (command: RespCommand) => {
 };
 
 export const multi = (command: RespCommand) => {
+  if (!isContainsArgs(command)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const args = command.args;
+  if (!isBulkStringArray(args)) {
+    return RespEncoder.encodeError("Invalid key or value");
+  }
+
+  const argsValues = args.map((arg) => (arg as RespBulkString).value);
+
+  console.log("multtttttttttttttttttttttttttttttttt");
+  console.log(argsValues);
+  console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
   return RespEncoder.encodeSimpleString("OK");
 };
