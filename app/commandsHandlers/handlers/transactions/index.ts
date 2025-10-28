@@ -1,8 +1,10 @@
+import type { Socket } from "net";
 import { RespEncoder } from "../../../resp/encoder";
 import type { RespBulkString, RespCommand } from "../../../resp/objects";
 import { StoreManager } from "../../../store/store-manager";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
+import { randomUUID } from "crypto";
 
 export const incr = (command: RespCommand) => {
   if (!isContainsArgs(command)) {
@@ -27,22 +29,42 @@ export const incr = (command: RespCommand) => {
   return RespEncoder.encodeInteger(newValue);
 };
 
-export const multi = (command: RespCommand) => {
-  const args = command.args;
-
-  const argsValues = args?.map((arg) => (arg as RespBulkString).value);
-
-  console.log("multtttttttttttttttttttttttttttttttt");
-  console.log(argsValues);
-  console.log("vvvvvvvvvvvvccccccccvvvvvvvvvvvvvvvvvvvvvvvv");
-
-  if (command.command == "EXEC") {
-    return RespEncoder.encodeError("EXEC without MULTI");
-  }
-
-  if (!isBulkStringArray(args)) {
-    return RespEncoder.encodeError("Invalid key or value");
-  }
-
+export const multi = (command: RespCommand, connection: Socket) => {
   return RespEncoder.encodeSimpleString("OK");
 };
+
+export const exec = (command: RespCommand, connection: Socket) => {
+  if (transactionManager.exec(connection)) return RespEncoder.encodeArray([]);
+
+  return RespEncoder.encodeError("EXEC without MULTI");
+};
+
+type Transaction = {
+  queue: [];
+};
+
+type SocketWithId = Socket & {
+  id: string;
+};
+
+export class TransactionsManager {
+  private openedTransactions: Map<string, Transaction> = new Map<string, Transaction>();
+
+  start(connection: Socket) {
+    const id = randomUUID();
+    (connection as any).id = id;
+    this.openedTransactions.set(id, { queue: [] });
+  }
+
+  exec(connection: Socket) {
+    const transactionId = (connection as SocketWithId).id;
+
+    if (!transactionId || !this.openedTransactions.get(transactionId)) return false;
+
+    this.openedTransactions.delete(transactionId);
+
+    return true;
+  }
+}
+
+export const transactionManager = new TransactionsManager();

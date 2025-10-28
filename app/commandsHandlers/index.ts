@@ -9,10 +9,10 @@ import { ping } from "./handlers/ping";
 import { set } from "./handlers/set";
 import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
-import { incr, multi } from "./handlers/transactions";
+import { exec, incr, multi } from "./handlers/transactions";
 
-type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD">;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;
+type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC">;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "EXEC" | "MULTI">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -29,13 +29,13 @@ const commandHandlers = {
   XADD: xAdd,
   XRANGE: xRange,
   INCR: incr,
-  MULTI: multi,
-  EXEC: multi,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
   BLPOP: pLPop,
   XREAD: xRead,
+  MULTI: multi,
+  EXEC: exec,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 export const handleCommand = (command: RespCommand, connection: Socket) => {
