@@ -114,20 +114,20 @@ export const xRead = (command: RespCommand, connection: Socket) => {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
-  // preserve original values and a uppercase copy for keyword detection
+  // preserve original values and uppercase for keyword detection
   const values = args.map((a) => (a as RespBulkString).value);
   const valuesUpper = values.map((v) => v.toUpperCase());
 
   // find BLOCK (case-insensitive)
   const blockIndex = valuesUpper.indexOf("BLOCK");
+  let timeoutSeconds: number | null = null; // null => no blocking
 
-  // If BLOCK exists, parse timeout (milliseconds) and remove both tokens from values
-  let timeoutSeconds: number | null = null; // null => no blocking requested
   if (blockIndex !== -1) {
     const rawTimeout = values[blockIndex + 1];
     const timeoutMs = parseFloat(rawTimeout || "0") || 0;
     timeoutSeconds = timeoutMs / 1000;
-    // remove the BLOCK token and its timeout value from both arrays
+
+    // remove BLOCK and timeout tokens
     values.splice(blockIndex, 2);
     valuesUpper.splice(blockIndex, 2);
   }
@@ -152,19 +152,17 @@ export const xRead = (command: RespCommand, connection: Socket) => {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    const startId = ids[i];
+    let startId = ids[i];
     const stream = StoreManager.get().get(key) as Map<string, Record<string, string>> | undefined;
 
-    if (startId === "$") {
-      if (timeoutSeconds !== null) {
-        observerManager.add({ connection, key, timeout: timeoutSeconds });
-        return;
-      } else {
-        return RespEncoder.encodeNullArray();
-      }
-    }
-
     if (stream) {
+      // Handle "$" → means "block for entries newer than the latest one"
+      if (startId === "$") {
+        const lastEntryId = Array.from(stream.keys()).pop() || "0-0";
+        startId = lastEntryId;
+      }
+
+      // get entries newer than the startId
       const newEntries = Array.from(stream.entries()).filter(([id]) => id > startId);
       if (newEntries.length) {
         streamsWithEntries.push([key, newEntries]);
@@ -177,40 +175,36 @@ export const xRead = (command: RespCommand, connection: Socket) => {
     return encodeMultipleStreamResponse(streamsWithEntries);
   }
 
-  // No stream had new entries — if BLOCK requested, register per-key observers
+  // No stream had new entries — if BLOCK requested, register observers
   if (timeoutSeconds !== null) {
-    // register an observer for each key so when any key receives an XADD it can notify
-    // store observer ids and their timers so we can clean them if necessary
     const observerRegistrations: { key: string; id: string; timer?: NodeJS.Timeout }[] = [];
 
-    for (const key of keys) {
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const startId = ids[i];
+
       const observerId = observerManager.add({
         connection,
         key,
         timeout: timeoutSeconds,
-      } as any); // cast to any in case observerManager type is narrower
+        startId,
+      } as any);
 
-      // schedule timeout only when > 0 (BLOCK 0 we treat as indefinite wait)
       if (timeoutSeconds > 0) {
         const timer = setTimeout(() => {
           const removed = observerManager.remove(observerId);
           if (removed) {
-            try {
-              connection.write(RespEncoder.encodeNullArray());
-            } catch {
-              // ignore write errors
-            }
+            connection.write(RespEncoder.encodeNullArray());
           }
         }, timeoutSeconds * 1000);
 
         observerRegistrations.push({ key, id: observerId, timer });
       } else {
-        // indefinite wait (BLOCK 0) — no timer scheduled
         observerRegistrations.push({ key, id: observerId });
       }
     }
 
-    // return without writing — client stays blocked
+    // block until observer triggers — don’t write anything yet
     return;
   }
 
