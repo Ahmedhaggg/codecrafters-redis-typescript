@@ -21,4 +21,4 @@ const server = net.createServer((connection) => {
   });
 });
 
-server.listen(config.getPort(), "127.0.0.1");
+server.listen(config.port, "127.0.0.1");

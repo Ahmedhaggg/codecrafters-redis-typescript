@@ -14,10 +14,12 @@ export const info = (command: RespCommand) => {
   }
 
   console.log(args.map((arg) => (arg as any).value));
-  const role = args[0].value;
+  const infoVar = args[0].value;
 
-  if (role === "replication") {
-    return RespEncoder.encodeString("role:" + config.getRole());
+  if (infoVar === "replication") {
+    return RespEncoder.encodeString(
+      `role:${config.role}\r\nmaster_replid:${config.id}\r\nmaster_repl_offset:${config.offset}`
+    );
   }
 
   return RespEncoder.encodeString("role:master");
