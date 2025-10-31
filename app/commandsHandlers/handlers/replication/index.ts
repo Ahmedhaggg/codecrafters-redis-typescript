@@ -14,7 +14,7 @@ export const info = (command: RespCommand) => {
   }
 
   console.log(args.map((arg) => (arg as any).value));
-  const [role] = args[0].value;
+  const role = args[0].value;
 
   if (role === "replication") {
     return RespEncoder.encodeString("role:" + config.getRole());
