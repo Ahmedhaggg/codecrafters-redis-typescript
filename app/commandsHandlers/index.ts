@@ -3,6 +3,7 @@ import { RespEncoder } from "../resp/encoder";
 import type { RespCommand } from "../resp/objects";
 import { handleTransaction, isTransactionCommand } from "./handlers/transactions/transactions-commands-handlers";
 import { getCommandHandler } from "./handlers.factory";
+import { handleReplicaSync } from "./handlers/replication/replica-sync.handler";
 
 export const handleCommand = (command: RespCommand, connection: Socket) => {
   if (isTransactionCommand(command, connection)) return handleTransaction(command, connection);
@@ -17,5 +18,6 @@ export const handleCommand = (command: RespCommand, connection: Socket) => {
 
   if (handler.type == "REQ_RES") return connection.write(handler.handler(command));
 
+  handleReplicaSync(command);
   connection.write(RespEncoder.encodeError("INVALID"));
 };

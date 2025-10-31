@@ -4,6 +4,7 @@ import { RespEncoder } from "../../../resp/encoder";
 import type { RespCommand } from "../../../resp/objects";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
+import { Replica, replicasManager } from "../../../store/replicas";
 
 export const info = (command: RespCommand) => {
   if (!isContainsArgs(command)) return RespEncoder.encodeError("Invalid key or value");
@@ -61,7 +62,7 @@ export const psync = (command: RespCommand, connection: Socket) => {
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
 
-    // connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n${EMPTY_RDB_BUFFER.toString("hex")}`);
+    replicasManager.addReplica(new Replica(connection));
     return;
   }
 
