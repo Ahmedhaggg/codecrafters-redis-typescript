@@ -20,7 +20,7 @@ const server = net.createServer((connection) => {
   });
 });
 
-console.log(process.argv);
+console.log("args", process.argv);
 const portArg = process.argv.find((arg) => arg.startsWith("--port="));
 const port = portArg ? Number(portArg.split("=")[1]) : 6379;
 
