@@ -8,7 +8,7 @@ const REPLICA_SYNC_COMMANDS: CommandName[] = ["SET", "DEL", "DEL"];
 export const handleReplicaSync = (command: RespCommand) => {
   if (REPLICA_SYNC_COMMANDS.includes(command.command)) {
     const encodedCommand = RespEncoder.encodeArray([
-      command.command,
+      RespEncoder.encodeString(command.command),
       ...(command.args?.map((c) => RespEncoder.encodeString((c as RespBulkString).value)) ?? []),
     ]);
 
