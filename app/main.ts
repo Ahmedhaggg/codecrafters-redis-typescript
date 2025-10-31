@@ -2,6 +2,7 @@ import * as net from "net";
 import { RespDecoder } from "./resp/decoder";
 import { RespCommand } from "./resp/objects";
 import { handleCommand } from "./commandsHandlers";
+import { getPort } from "./config/port.config";
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -20,8 +21,4 @@ const server = net.createServer((connection) => {
   });
 });
 
-console.log("args", process.argv);
-const portArg = process.argv.find((arg) => arg.startsWith("--port="));
-const port = portArg ? Number(portArg.split("=")[1]) : 6379;
-
-server.listen(port, "127.0.0.1");
+server.listen(getPort(), "127.0.0.1");
