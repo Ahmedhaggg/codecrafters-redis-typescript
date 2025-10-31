@@ -10,7 +10,7 @@ export class Config {
     console.log("role args", process.argv);
     const args = process.argv;
     const roleArgIndex = args.findIndex((arg) => arg == "--replicaof");
-    const role = roleArgIndex !== -1 ? "master" : "slave";
+    const role = roleArgIndex == -1 ? "master" : "slave";
     return role;
   }
 }
