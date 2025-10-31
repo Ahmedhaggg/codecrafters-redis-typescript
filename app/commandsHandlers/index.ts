@@ -48,7 +48,8 @@ export const handleCommand = (command: RespCommand, connection: Socket) => {
     transaction.queue.push(command);
 
     transactionManager.update(connection, transaction);
-    return RespEncoder.encodeSimpleString("QUEUED");
+    connection.write(RespEncoder.encodeSimpleString("QUEUED"));
+    return;
   }
 
   if (cmd in observersCommandHandlers) {
