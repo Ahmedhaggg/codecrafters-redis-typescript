@@ -11,8 +11,11 @@ import { type Socket } from "net";
 import { incr } from "./handlers/incr";
 import { info, psync, replconf } from "./handlers/replication";
 
-type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD">;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;
+type ReqResCommands = Exclude<
+  CommandName,
+  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC"
+>;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -30,13 +33,13 @@ const commandHandlers = {
   XRANGE: xRange,
   INCR: incr,
   INFO: info,
-  PSYNC: psync,
   REPLCONF: replconf,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
   BLPOP: pLPop,
   XREAD: xRead,
+  PSYNC: psync,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 type GetCommandHandler =

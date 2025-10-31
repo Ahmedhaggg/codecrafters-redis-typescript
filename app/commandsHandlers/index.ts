@@ -1,7 +1,6 @@
 import type { Socket } from "net";
 import { RespEncoder } from "../resp/encoder";
 import type { RespCommand } from "../resp/objects";
-import { transactionManager } from "../store/transaction-manager";
 import { handleTransaction, isTransactionCommand } from "./handlers/transactions/transactions-commands-handlers";
 import { getCommandHandler } from "./handlers.factory";
 
