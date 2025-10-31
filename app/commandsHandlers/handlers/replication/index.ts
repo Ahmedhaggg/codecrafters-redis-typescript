@@ -13,6 +13,7 @@ export const info = (command: RespCommand) => {
     return RespEncoder.encodeError("Invalid key or value");
   }
 
+  console.log(args.map((arg) => (arg as any).value));
   const [role] = args[0].value;
 
   if (role === "replication") {
