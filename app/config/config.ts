@@ -22,7 +22,7 @@ const loadConfig = (): AppConfig => {
 
   let role: "master" | "slave" = "master";
 
-  const isContainsReplicaOf = args.findIndex((arg) => arg === "--replica-of");
+  const isContainsReplicaOf = args.findIndex((arg) => arg === "--replicaof");
 
   let replicaOf: AppConfig["replicaOf"];
 
