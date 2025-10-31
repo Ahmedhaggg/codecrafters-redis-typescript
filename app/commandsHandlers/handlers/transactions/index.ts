@@ -18,14 +18,12 @@ export const exec = (connection: Socket) => {
     return RespEncoder.encodeError("EXEC without MULTI");
   }
 
-  // Execute queued commands
   const results = transaction.queue.map((cmd) => {
     try {
       const { handler } = getCommandHandler(cmd);
       const result = handler(cmd, connection);
 
-      // Ensure result is RESP encoded string or Buffer
-      return result ?? RespEncoder.encodeNil(); // use $-1\r\n if null
+      return result ?? RespEncoder.encodeNil();
     } catch (err) {
       return RespEncoder.encodeError("EXEC command failed");
     }
@@ -33,6 +31,5 @@ export const exec = (connection: Socket) => {
 
   transactionManager.remove(connection);
 
-  // Always return a valid RESP array
   return RespEncoder.encodeArray(results as string[]);
 };

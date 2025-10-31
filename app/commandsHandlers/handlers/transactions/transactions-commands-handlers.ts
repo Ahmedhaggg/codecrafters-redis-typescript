@@ -4,6 +4,10 @@ import { transactionManager } from "../../../store/transaction-manager";
 import { RespEncoder } from "../../../resp/encoder";
 import { exec, multi } from ".";
 
+export const isTransactionCommand = (command: RespCommand, conn: Socket) => {
+  return command.command == "MULTI" || command.command == "EXEC" || transactionManager.haveOpenedTransaction(conn);
+};
+
 export const handleTransaction = (command: RespCommand, conn: Socket) => {
   if (command.command == "MULTI") return conn.write(multi(conn));
 
