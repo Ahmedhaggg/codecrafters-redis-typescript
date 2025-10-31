@@ -9,7 +9,11 @@ export const connectReplicaToMaster = () => {
   const client = net.createConnection(port, host, () => {
     console.log("Connected to master");
     console.log(RespEncoder.encodeArray([RespEncoder.encodeString("PING")]));
-    client.write(RespEncoder.encodeArray([RespEncoder.encodeString("PING")]));
+    const commands = [["PING"], ["REPLCONF", "listening-port", config.port.toString()], ["REPLCONF", "capa", "psync2"]];
+
+    commands.forEach((command) => {
+      client.write(RespEncoder.encodeArray(command.map((str) => RespEncoder.encodeString(str))));
+    });
   });
 
   client.on("data", (data) => {
