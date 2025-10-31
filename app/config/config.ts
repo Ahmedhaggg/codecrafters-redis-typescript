@@ -29,10 +29,10 @@ const loadConfig = (): AppConfig => {
   if (isContainsReplicaOf !== -1) {
     role = "slave";
     const replicaOfArg = args[isContainsReplicaOf + 1];
-    const [host, port] = replicaOfArg.split(":");
+    const [masterHost, masterPort] = replicaOfArg.split(" ");
     replicaOf = {
-      host,
-      port: Number(port),
+      host: masterHost,
+      port: Number(masterPort),
     };
   }
 
