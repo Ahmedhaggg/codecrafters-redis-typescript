@@ -2,7 +2,7 @@ import * as net from "net";
 import { RespDecoder } from "./resp/decoder";
 import { RespCommand } from "./resp/objects";
 import { handleCommand } from "./commandsHandlers";
-import { getPort } from "./config/port.config";
+import { config } from "./config/port.config";
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -21,4 +21,4 @@ const server = net.createServer((connection) => {
   });
 });
 
-server.listen(getPort(), "127.0.0.1");
+server.listen(config.getPort(), "127.0.0.1");
