@@ -3,6 +3,7 @@ import { RespDecoder } from "./resp/decoder";
 import { RespCommand } from "./resp/objects";
 import { handleCommand } from "./commandsHandlers";
 import { config } from "./config/config";
+import { connectToMaster } from "./config/replica-config";
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -20,5 +21,10 @@ const server = net.createServer((connection) => {
     handleCommand(command, connection);
   });
 });
+
+if (config.role === "slave") {
+  console.log("debug mode is on");
+  connectToMaster();
+}
 
 server.listen(config.port, "127.0.0.1");
