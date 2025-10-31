@@ -9,8 +9,9 @@ import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
 import { type Socket } from "net";
 import { incr } from "./handlers/incr";
+import { info } from "./handlers/replication";
 
-type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC">;
+type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD">;
 type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;
 
 const commandHandlers = {
@@ -28,6 +29,7 @@ const commandHandlers = {
   XADD: xAdd,
   XRANGE: xRange,
   INCR: incr,
+  INFO: info,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
