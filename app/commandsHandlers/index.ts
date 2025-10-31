@@ -17,7 +17,7 @@ export const handleCommand = (command: RespCommand, connection: Socket) => {
   if (handler.type == "OBSERVER") {
     const obsRes = handler.handler(command, connection);
     if (obsRes) return connection.write(obsRes);
-    return;
+    return RespEncoder.encodeNil();
   }
 
   if (handler.type == "REQ_RES") return connection.write(handler.handler(command));
