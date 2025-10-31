@@ -50,7 +50,7 @@ export const psync = (command: RespCommand) => {
   const [firstArg, secondArg] = args.map((arg) => arg.value);
 
   if (firstArg == "?" && secondArg == "-1") {
-    return RespEncoder.encodeString(config.id);
+    return RespEncoder.encodeString(`FULLRESYNC ${config.id} 0`);
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
