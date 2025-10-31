@@ -13,10 +13,7 @@ export const exec = (connection: Socket) => {
     return RespEncoder.encodeError("EXEC without MULTI");
   }
 
-  const transaction = transactionManager.get(connection);
-  if (!transaction) {
-    return RespEncoder.encodeError("EXEC without MULTI");
-  }
+  const transaction = transactionManager.get(connection)!;
 
   const results = transaction.queue.map((cmd) => {
     try {
@@ -32,4 +29,13 @@ export const exec = (connection: Socket) => {
   transactionManager.remove(connection);
 
   return RespEncoder.encodeArray(results as string[]);
+};
+
+export const discard = (connection: Socket) => {
+  if (!transactionManager.haveOpenedTransaction(connection)) {
+    return RespEncoder.encodeError("DISCARD without MULTI");
+  }
+
+  transactionManager.remove(connection);
+  return RespEncoder.encodeSimpleString("OK");
 };

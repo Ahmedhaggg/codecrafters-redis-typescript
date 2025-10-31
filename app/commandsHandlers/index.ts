@@ -6,8 +6,6 @@ import { handleTransaction, isTransactionCommand } from "./handlers/transactions
 import { getCommandHandler } from "./handlers.factory";
 
 export const handleCommand = (command: RespCommand, connection: Socket) => {
-  const cmd = command.command;
-
   if (isTransactionCommand(command, connection)) return handleTransaction(command, connection);
 
   const handler = getCommandHandler(command);

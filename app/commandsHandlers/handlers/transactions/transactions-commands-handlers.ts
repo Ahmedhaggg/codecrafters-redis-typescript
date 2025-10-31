@@ -5,13 +5,20 @@ import { RespEncoder } from "../../../resp/encoder";
 import { exec, multi } from ".";
 
 export const isTransactionCommand = (command: RespCommand, conn: Socket) => {
-  return command.command == "MULTI" || command.command == "EXEC" || transactionManager.haveOpenedTransaction(conn);
+  return (
+    command.command == "MULTI" ||
+    command.command == "EXEC" ||
+    command.command == "DISCARD" ||
+    transactionManager.haveOpenedTransaction(conn)
+  );
 };
 
 export const handleTransaction = (command: RespCommand, conn: Socket) => {
   if (command.command == "MULTI") return conn.write(multi(conn));
 
   if (command.command == "EXEC") return conn.write(exec(conn));
+
+  if (command.command == "DISCARD") return conn.write(RespEncoder.encodeSimpleString("OK"));
 
   const transaction = transactionManager.get(conn)!;
 
