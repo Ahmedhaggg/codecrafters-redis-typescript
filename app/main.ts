@@ -20,6 +20,8 @@ const server = net.createServer((connection) => {
   });
 });
 
-const PORT = Number(process.argv[2]) || 6379;
+console.log(process.argv);
+const portArg = process.argv.find((arg) => arg.startsWith("--port="));
+const port = portArg ? Number(portArg.split("=")[1]) : 6379;
 
-server.listen(PORT, "127.0.0.1");
+server.listen(port, "127.0.0.1");
