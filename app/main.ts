@@ -2,7 +2,7 @@ import * as net from "net";
 import { RespDecoder } from "./resp/decoder";
 import { RespCommand } from "./resp/objects";
 import { handleCommand } from "./commandsHandlers";
-import { config } from "./config/port.config";
+import { config } from "./config/config";
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {

@@ -1,4 +1,4 @@
-import { config } from "../../../config/port.config";
+import { config } from "../../../config/config";
 import { RespEncoder } from "../../../resp/encoder";
 import type { RespCommand } from "../../../resp/objects";
 import { isContainsArgs } from "../../validation/contains-args.validator";
