@@ -8,8 +8,8 @@ export const connectReplicaToMaster = () => {
   console.log(" config.replicaOf ", config.replicaOf);
   const client = net.createConnection(port, host, () => {
     console.log("Connected to master");
-    console.log(RespEncoder.encodeArray(["PING"]));
-    client.write(RespEncoder.encodeArray(["PING"]));
+    console.log(RespEncoder.encodeArray([RespEncoder.encodeString("PING")]));
+    client.write(RespEncoder.encodeArray([RespEncoder.encodeString("PING")]));
   });
 
   client.on("data", (data) => {
