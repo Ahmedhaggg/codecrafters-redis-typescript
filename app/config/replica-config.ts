@@ -33,6 +33,16 @@ export const connectReplicaToMaster = () => {
     );
   };
 
+  const sendPsync = () => {
+    client.write(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("PSYNC"),
+        RespEncoder.encodeString("?"),
+        RespEncoder.encodeString("-1"),
+      ])
+    );
+  };
+
   const client = net.createConnection(port, host, () => {
     console.log("Connected to master");
     sendPing();
@@ -46,6 +56,9 @@ export const connectReplicaToMaster = () => {
       currentHandShakeStep++;
     } else if (currentHandShakeStep === 2) {
       sendCapa();
+      currentHandShakeStep++;
+    } else if (currentHandShakeStep === 3) {
+      sendPsync();
       currentHandShakeStep++;
     }
   });
