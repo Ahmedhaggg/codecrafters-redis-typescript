@@ -58,7 +58,10 @@ export const psync = (command: RespCommand, connection: Socket) => {
   if (firstArg == "?" && secondArg == "-1") {
     connection.write(RespEncoder.encodeString(`FULLRESYNC ${config.id} 0`));
 
-    connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n${EMPTY_RDB_BUFFER.toString("hex")}`);
+    connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
+    connection.write(EMPTY_RDB_BUFFER);
+
+    // connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n${EMPTY_RDB_BUFFER.toString("hex")}`);
     return;
   }
 
