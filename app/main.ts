@@ -4,6 +4,7 @@ import { RespCommand } from "./resp/objects";
 import { handleCommand } from "./commandsHandlers";
 import { config } from "./config/config";
 import { connectReplicaToMaster } from "./config/replica-config";
+import { handleReplicaSync } from "./commandsHandlers/handlers/replication/replica-sync.handler";
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
@@ -19,6 +20,7 @@ const server = net.createServer((connection) => {
     }
 
     handleCommand(command, connection);
+    handleReplicaSync(command);
   });
 });
 

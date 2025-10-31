@@ -11,6 +11,10 @@ export const handleReplicaSync = (command: RespCommand) => {
       command.command,
       ...(command.args?.map((c) => (c as RespBulkString).value) ?? []),
     ]);
+
+    console.log("replicasManager.replicas: ", replicasManager.replicas);
+
+    console.log("encodedCommand: ", encodedCommand);
     replicasManager.replicas.forEach((replica) => {
       replica.send(encodedCommand);
     });
