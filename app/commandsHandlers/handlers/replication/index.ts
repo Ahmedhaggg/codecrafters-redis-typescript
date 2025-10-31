@@ -33,11 +33,11 @@ export const replconf = (command: RespCommand) => {
   const [firstArg, secondArg] = args.map((arg) => arg.value);
 
   if (firstArg == "capa" && secondArg == "psync2") {
-    return RespEncoder.encodeSimpleString("ok");
+    return RespEncoder.encodeSimpleString("OK");
   }
 
   if (firstArg == "listening-port" && typeof parseInt(secondArg) == "number") {
-    return RespEncoder.encodeSimpleString("ok");
+    return RespEncoder.encodeSimpleString("OK");
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
