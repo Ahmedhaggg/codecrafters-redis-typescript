@@ -24,3 +24,34 @@ export const info = (command: RespCommand) => {
 
   return RespEncoder.encodeString("role:master");
 };
+
+export const replconf = (command: RespCommand) => {
+  const args = command.args;
+
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
+
+  const [firstArg, secondArg] = args.map((arg) => arg.value);
+
+  if (firstArg == "capa" && secondArg == "psync2") {
+    return RespEncoder.encodeSimpleString("ok");
+  }
+
+  if (firstArg == "listening-port" && typeof parseInt(secondArg) == "number") {
+    return RespEncoder.encodeSimpleString("ok");
+  }
+
+  return RespEncoder.encodeError("ERR unknown REPLCONF option");
+};
+
+export const psync = (command: RespCommand) => {
+  const args = command.args;
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
+
+  const [firstArg, secondArg] = args.map((arg) => arg.value);
+
+  if (firstArg == "?" && secondArg == "-1") {
+    return RespEncoder.encodeString(config.id);
+  }
+
+  return RespEncoder.encodeError("ERR unknown REPLCONF option");
+};

@@ -9,7 +9,7 @@ import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
 import { type Socket } from "net";
 import { incr } from "./handlers/incr";
-import { info } from "./handlers/replication";
+import { info, psync, replconf } from "./handlers/replication";
 
 type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD">;
 type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;
@@ -30,6 +30,8 @@ const commandHandlers = {
   XRANGE: xRange,
   INCR: incr,
   INFO: info,
+  PSYNC: psync,
+  REPLCONF: replconf,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {

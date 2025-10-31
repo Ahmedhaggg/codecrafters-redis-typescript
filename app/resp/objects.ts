@@ -61,7 +61,9 @@ export type CommandName =
   | "MULTI"
   | "EXEC"
   | "DISCARD"
-  | "INFO";
+  | "INFO"
+  | "REPLCONF"
+  | "PSYNC";
 
 export class RespCommand extends RespObject {
   constructor(raw: Buffer, public readonly command: CommandName, public readonly args: RespObject[] | null) {
@@ -90,4 +92,6 @@ export const COMMANDS: CommandName[] = [
   "EXEC",
   "DISCARD",
   "INFO",
+  "REPLCONF",
+  "PSYNC",
 ];
