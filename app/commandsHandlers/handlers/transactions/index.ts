@@ -9,20 +9,30 @@ export const multi = (connection: Socket) => {
 };
 
 export const exec = (connection: Socket) => {
-  if (transactionManager.haveOpenedTransaction(connection)) {
-    const transaction = transactionManager.get(connection);
-
-    const cmdRes = transaction?.queue
-      .map((c) => {
-        let { handler } = getCommandHandler(c);
-        return handler(c, connection);
-      })
-      .filter((r) => r !== undefined || typeof r == "string") as string[];
-
-    transactionManager.remove(connection);
-
-    return RespEncoder.encodeArray(cmdRes);
+  if (!transactionManager.haveOpenedTransaction(connection)) {
+    return RespEncoder.encodeError("EXEC without MULTI");
   }
 
-  return RespEncoder.encodeError("EXEC without MULTI");
+  const transaction = transactionManager.get(connection);
+  if (!transaction) {
+    return RespEncoder.encodeError("EXEC without MULTI");
+  }
+
+  // Execute queued commands
+  const results = transaction.queue.map((cmd) => {
+    try {
+      const { handler } = getCommandHandler(cmd);
+      const result = handler(cmd, connection);
+
+      // Ensure result is RESP encoded string or Buffer
+      return result ?? RespEncoder.encodeNil(); // use $-1\r\n if null
+    } catch (err) {
+      return RespEncoder.encodeError("EXEC command failed");
+    }
+  });
+
+  transactionManager.remove(connection);
+
+  // Always return a valid RESP array
+  return RespEncoder.encodeArray(results as string[]);
 };
