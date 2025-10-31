@@ -2,7 +2,7 @@ import type { RespCommand } from "../../../resp/objects";
 import type { Socket } from "net";
 import { transactionManager } from "../../../store/transaction-manager";
 import { RespEncoder } from "../../../resp/encoder";
-import { exec, multi } from ".";
+import { discard, exec, multi } from ".";
 
 export const isTransactionCommand = (command: RespCommand, conn: Socket) => {
   return (
@@ -18,7 +18,7 @@ export const handleTransaction = (command: RespCommand, conn: Socket) => {
 
   if (command.command == "EXEC") return conn.write(exec(conn));
 
-  if (command.command == "DISCARD") return conn.write(RespEncoder.encodeSimpleString("OK"));
+  if (command.command == "DISCARD") return conn.write(discard(conn));
 
   const transaction = transactionManager.get(conn)!;
 
