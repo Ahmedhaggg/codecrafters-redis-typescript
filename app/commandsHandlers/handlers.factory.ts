@@ -7,8 +7,8 @@ import { ping } from "./handlers/ping";
 import { set } from "./handlers/set";
 import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
-import { exec, incr, multi } from "./handlers/transactions";
 import { type Socket } from "net";
+import { incr } from "./handlers/incr";
 
 type ReqResCommands = Exclude<CommandName, "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC">;
 type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD">;

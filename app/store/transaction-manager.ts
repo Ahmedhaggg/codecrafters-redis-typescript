@@ -19,7 +19,7 @@ export class TransactionsManager {
     this.openedTransactions.set(id, { queue: [] });
   }
 
-  exec(connection: Socket) {
+  remove(connection: Socket) {
     const transactionId = (connection as SocketWithId).id;
 
     this.openedTransactions.delete(transactionId);
