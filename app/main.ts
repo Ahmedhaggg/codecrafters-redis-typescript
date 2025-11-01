@@ -8,19 +8,23 @@ import { handleReplicaSync } from "./commandsHandlers/handlers/replication/repli
 
 const server = net.createServer((connection) => {
   connection.on("data", (data) => {
-    console.log("new Request");
-    const decoder = new RespDecoder(data);
+    console.log("new Request", data.toString());
+    try {
+      const decoder = new RespDecoder(data);
 
-    const command = decoder.decode();
+      const command = decoder.decode();
 
-    console.log("command", command);
-    if (command instanceof RespCommand !== true) {
-      connection.write("-ERR unknown command\r\n");
-      return;
+      console.log("command", command);
+      if (command instanceof RespCommand !== true) {
+        connection.write("-ERR unknown command\r\n");
+        return;
+      }
+
+      handleCommand(command, connection);
+      handleReplicaSync(command);
+    } catch (error) {
+      console.log(error);
     }
-
-    handleCommand(command, connection);
-    handleReplicaSync(command);
   });
 });
 
