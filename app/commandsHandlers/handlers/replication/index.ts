@@ -85,6 +85,7 @@ export const psync = (command: RespCommand, connection: Socket) => {
     );
 
     replicasManager.addReplica(new Replica(connection));
+    console.log("Replica added");
     return;
   }
 
