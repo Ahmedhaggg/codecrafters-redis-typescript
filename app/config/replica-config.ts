@@ -1,9 +1,6 @@
 import * as net from "net";
 import { config } from "./config";
 import { RespEncoder } from "../resp/encoder";
-import { handleCommand } from "../commandsHandlers";
-import { RespDecoder } from "../resp/decoder";
-import { RespCommand } from "../resp/objects";
 
 export const connectReplicaToMaster = () => {
   const { host, port } = config.replicaOf!;
@@ -63,17 +60,7 @@ export const connectReplicaToMaster = () => {
       sendPsync();
       currentHandShakeStep++;
     } else {
-      const respEncoder = new RespDecoder(data);
-
-      const command = respEncoder.decode();
-
-      if (command instanceof RespCommand !== true) {
-        console.log("unknown command");
-        client.write("-ERR unknown command\r\n");
-        return;
-      }
-
-      handleCommand(command, client);
+      console.log("data from master", data.toString());
     }
   });
 };
