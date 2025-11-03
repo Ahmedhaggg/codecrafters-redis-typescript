@@ -64,6 +64,8 @@ export const connectReplicaToMaster = () => {
       currentHandShakeStep++;
     } else {
       console.log("data from master", data.toString());
+
+      if (!data.toString().startsWith("*")) return;
       const respEncoder = new RespDecoder(data);
 
       const command = respEncoder.decode();
