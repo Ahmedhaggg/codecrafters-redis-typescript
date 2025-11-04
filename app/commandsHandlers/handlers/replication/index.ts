@@ -62,9 +62,11 @@ export const psync = (command: RespCommand, connection: Socket) => {
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
 
-    if (replicasManager.replicas.find((rep) => rep.isSameConnection(connection))) {
-      return;
-    }
+    const isSyncedBefore = replicasManager.replicas.find((rep) => rep.isSameConnection(connection));
+
+    console.log("isSyncedBefore: ", isSyncedBefore);
+
+    if (isSyncedBefore) return;
 
     connection.write(
       RespEncoder.encodeArray([
