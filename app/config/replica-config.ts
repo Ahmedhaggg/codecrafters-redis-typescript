@@ -61,6 +61,13 @@ export const connectReplicaToMaster = () => {
       currentHandShakeStep++;
     } else {
       console.log("data from master", data.toString());
+      const str = data.toString();
+      const commands = str
+        .split(/\*(?=\d+)/) // split on "*<number>" that starts a RESP array
+        .filter(Boolean)
+        .map((chunk) => "*" + chunk.trim());
+
+      console.log("replica received commands: ", commands);
     }
   });
 };
