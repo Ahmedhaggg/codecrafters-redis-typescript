@@ -63,20 +63,41 @@ export const connectReplicaToMaster = () => {
       sendPsync();
       currentHandShakeStep++;
     } else {
-      console.log("data from master", data.toString());
+      const str = data.toString();
 
-      if (!data.toString().startsWith("*")) return;
-      const respEncoder = new RespDecoder(data);
+      const commands = str
+        .split(/\*(?=\d+)/)
+        .filter(Boolean)
+        .map((chunk) => "*" + chunk.trim());
 
-      const command = respEncoder.decode();
+      for (const cmdStr of commands) {
+        console.log("cmdStr: ", cmdStr);
 
-      if (command instanceof RespCommand !== true) {
-        console.log("unknown command");
-        client.write("-ERR unknown command\r\n");
-        return;
+        const cmdBuffer = Buffer.from(cmdStr);
+        if (!cmdStr.startsWith("*")) {
+          console.log("is not set command ", cmdStr);
+          continue;
+        }
+
+        try {
+          const respDecoder = new RespDecoder(cmdBuffer);
+          const command = respDecoder.decode();
+
+          // Must be a valid RespCommand
+          if (!(command instanceof RespCommand)) continue;
+
+          // Only process SET commands
+          if (command.command?.toUpperCase() !== "SET") continue;
+
+          console.log("SET command received:", command.args);
+
+          // Handle or store the SET command
+          handleCommand(command, client);
+        } catch {
+          // Ignore invalid / partial RESP data (like binary RDB dump)
+          continue;
+        }
       }
-      console.log("replica", command);
-      handleCommand(command, client);
     }
   });
 };
