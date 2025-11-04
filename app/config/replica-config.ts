@@ -73,7 +73,9 @@ export const connectReplicaToMaster = () => {
       console.log("replica received commands: ", commands);
 
       for (const cmdStr of commands) {
+        console.log("exec command : ", cmdStr);
         const cmdBuffer = Buffer.from(cmdStr);
+        console.log("convert the command to buffer");
 
         try {
           const respDecoder = new RespDecoder(cmdBuffer);
