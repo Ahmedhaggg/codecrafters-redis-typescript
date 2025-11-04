@@ -52,44 +52,76 @@ export const connectReplicaToMaster = () => {
     currentHandShakeStep++;
   });
 
+  let rdbBytesRemaining: number | null = null;
+  let rdbBuffer = Buffer.alloc(0);
+
   client.on("data", (data) => {
+    // If we are inside RDB transfer mode
+    if (rdbBytesRemaining !== null) {
+      rdbBuffer = Buffer.concat([rdbBuffer, data]);
+
+      if (rdbBuffer.length >= rdbBytesRemaining) {
+        const rdbFile = rdbBuffer.subarray(0, rdbBytesRemaining);
+        console.log(`✅ Received full RDB (${rdbBytesRemaining} bytes)`);
+        handleRDB(rdbFile); // optional – save or ignore it
+
+        // Remove consumed bytes and reset state
+        const rest = rdbBuffer.subarray(rdbBytesRemaining);
+        rdbBytesRemaining = null;
+        rdbBuffer = Buffer.alloc(0);
+
+        // Continue parsing any leftover RESP data
+        if (rest.length > 0) client.emit("data", rest);
+      }
+      return;
+    }
+
+    // Normal handshake logic
     if (currentHandShakeStep === 1) {
       sendListeningPort();
       currentHandShakeStep++;
-    } else if (currentHandShakeStep === 2) {
+      return;
+    }
+    if (currentHandShakeStep === 2) {
       sendCapa();
       currentHandShakeStep++;
-    } else if (currentHandShakeStep === 3) {
+      return;
+    }
+    if (currentHandShakeStep === 3) {
       sendPsync();
       currentHandShakeStep++;
-    } else {
-      console.log("data from master", data.toString());
-      const str = data.toString();
-      const commands = str
-        .split(/\*(?=\d+)/)
-        .filter(Boolean)
-        .map((chunk) => "*" + chunk.trim());
+      return;
+    }
 
-      console.log("replica received commands: ", commands);
+    // Text decode only for small lines
+    const str = data.toString("utf8");
 
-      for (const cmdStr of commands) {
-        console.log("exec command : ", cmdStr);
-        const cmdBuffer = Buffer.from(cmdStr);
-        console.log("convert the command to buffer");
+    // Check for FULLRESYNC line
+    if (str.startsWith("+FULLRESYNC")) {
+      console.log("→ Master requested FULLRESYNC");
+      const lines = str.split("\r\n");
+      const bulkLine = lines.find((l) => l.startsWith("$"));
+      if (bulkLine) {
+        rdbBytesRemaining = parseInt(bulkLine.slice(1));
+        console.log(`→ Expecting ${rdbBytesRemaining} RDB bytes`);
+      }
+      return;
+    }
 
-        try {
-          const respDecoder = new RespDecoder(cmdBuffer);
-          const command = respDecoder.decode();
+    // Regular command stream after RDB
+    const commands = str
+      .split(/\*(?=\d+)/)
+      .filter(Boolean)
+      .map((chunk) => "*" + chunk.trim());
 
-          if (!(command instanceof RespCommand)) continue;
-
-          console.log("command received:", command.args);
-
-          handleCommand(command, client);
-        } catch (err) {
-          console.log("error in replica handshake command : ", err);
-          continue;
-        }
+    for (const cmdStr of commands) {
+      try {
+        const respDecoder = new RespDecoder(Buffer.from(cmdStr));
+        const command = respDecoder.decode();
+        if (!(command instanceof RespCommand)) continue;
+        handleCommand(command, client);
+      } catch (err) {
+        console.log("error decoding command:", err);
       }
     }
   });
@@ -97,3 +129,8 @@ export const connectReplicaToMaster = () => {
 
 // console.log(RespEncoder.encodeArray([RespEncoder.encodeString("PING")]));
 // client.write(RespEncoder.encodeArray([RespEncoder.encodeString("PING")]));
+
+const handleRDB = (data: Buffer) => {
+  // store or discard RDB snapshot
+  console.log("Received RDB data chunk:", data.length, "bytes");
+};
