@@ -1,9 +1,9 @@
 import * as net from "net";
 import { config } from "./config";
 import { RespEncoder } from "../resp/encoder";
-import { handleCommand } from "../commandsHandlers";
-import { RespCommand } from "../resp/objects";
 import { RespDecoder } from "../resp/decoder";
+import { RespCommand } from "../resp/objects";
+import { handleCommand } from "../commandsHandlers";
 
 export const connectReplicaToMaster = () => {
   const { host, port } = config.replicaOf!;
@@ -63,6 +63,7 @@ export const connectReplicaToMaster = () => {
       sendPsync();
       currentHandShakeStep++;
     } else {
+      console.log("data from master", data.toString());
       const str = data.toString();
       console.log("replica received ", str);
       const commands = str
