@@ -1,6 +1,9 @@
 import * as net from "net";
 import { config } from "./config";
 import { RespEncoder } from "../resp/encoder";
+import { handleCommand } from "../commandsHandlers";
+import { RespCommand } from "../resp/objects";
+import { RespDecoder } from "../resp/decoder";
 
 export const connectReplicaToMaster = () => {
   const { host, port } = config.replicaOf!;
@@ -63,11 +66,29 @@ export const connectReplicaToMaster = () => {
       console.log("data from master", data.toString());
       const str = data.toString();
       const commands = str
-        .split(/\*(?=\d+)/) // split on "*<number>" that starts a RESP array
+        .split(/\*(?=\d+)/)
         .filter(Boolean)
         .map((chunk) => "*" + chunk.trim());
 
       console.log("replica received commands: ", commands);
+
+      for (const cmdStr of commands) {
+        const cmdBuffer = Buffer.from(cmdStr);
+
+        try {
+          const respDecoder = new RespDecoder(cmdBuffer);
+          const command = respDecoder.decode();
+
+          if (!(command instanceof RespCommand)) continue;
+
+          console.log("command received:", command.args);
+
+          handleCommand(command, client);
+        } catch (err) {
+          console.log("error in replica handshake command : ", err);
+          continue;
+        }
+      }
     }
   });
 };
