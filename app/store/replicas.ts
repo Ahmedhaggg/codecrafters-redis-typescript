@@ -12,7 +12,31 @@ export class Replica {
   }
 
   isSameConnection(otherConn: Socket): boolean {
-    return this._conn.remoteAddress === otherConn.remoteAddress && this._conn.remotePort === otherConn.remotePort;
+    const currentAddr = this._conn.remoteAddress;
+    const currentPort = this._conn.remotePort;
+    const otherAddr = otherConn.remoteAddress;
+    const otherPort = otherConn.remotePort;
+
+    console.log("---------------------------------------------------");
+    console.log("[Replica::isSameConnection] 🔍 Comparing sockets...");
+    console.log(`[Replica::isSameConnection] Current replica socket:`);
+    console.log(`  🖥️  remoteAddress: ${currentAddr}`);
+    console.log(`  🔌 remotePort:     ${currentPort}`);
+    console.log(`[Replica::isSameConnection] Incoming socket:`);
+    console.log(`  🖥️  remoteAddress: ${otherAddr}`);
+    console.log(`  🔌 remotePort:     ${otherPort}`);
+
+    // Perform the actual comparison
+    const isSame = currentAddr === otherAddr && currentPort === otherPort;
+
+    if (isSame) {
+      console.log("[Replica::isSameConnection] ✅ Connections MATCH — same client reconnected or already registered.");
+    } else {
+      console.log("[Replica::isSameConnection] ❌ Connections DIFFER — new or different replica detected.");
+    }
+
+    console.log("---------------------------------------------------");
+    return isSame;
   }
 }
 
