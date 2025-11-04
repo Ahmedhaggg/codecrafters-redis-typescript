@@ -50,7 +50,6 @@ const EMPTY_RDB_HEX =
 
 const EMPTY_RDB_BUFFER = Buffer.from(EMPTY_RDB_HEX, "hex");
 
-let counter = 0;
 export const psync = (command: RespCommand, connection: Socket) => {
   const args = command.args;
   if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
@@ -63,7 +62,6 @@ export const psync = (command: RespCommand, connection: Socket) => {
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
     console.log("replicasManager.replicas : ", replicasManager.replicas);
-    if (counter !== 0) return;
     // connection.write(
     //   RespEncoder.encodeArray([
     //     RespEncoder.encodeString("SET"),
@@ -87,7 +85,6 @@ export const psync = (command: RespCommand, connection: Socket) => {
     // );
 
     replicasManager.addReplica(new Replica(connection));
-    counter++;
     console.log("Replica added.");
     return;
   }
