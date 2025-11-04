@@ -64,7 +64,7 @@ export const connectReplicaToMaster = () => {
       currentHandShakeStep++;
     } else {
       const str = data.toString();
-
+      console.log("replica received ", str);
       const commands = str
         .split(/\*(?=\d+)/)
         .filter(Boolean)
