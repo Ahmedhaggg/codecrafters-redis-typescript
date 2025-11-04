@@ -4,6 +4,7 @@ import { RespEncoder } from "../resp/encoder";
 import { handleCommand } from "../commandsHandlers";
 import { RespCommand } from "../resp/objects";
 import { RespDecoder } from "../resp/decoder";
+import { set } from "../commandsHandlers/handlers/set";
 
 export const connectReplicaToMaster = () => {
   const { host, port } = config.replicaOf!;
@@ -85,7 +86,9 @@ export const connectReplicaToMaster = () => {
 
           console.log("command received:", command.args);
 
-          handleCommand(command, client);
+          if (command.command == "SET") {
+            set(command);
+          }
         } catch (err) {
           console.log("error in replica handshake command : ", err);
           continue;
