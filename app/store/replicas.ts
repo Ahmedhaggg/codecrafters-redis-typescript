@@ -10,6 +10,10 @@ export class Replica {
   send(data: string) {
     this._conn.write(data);
   }
+
+  isSameConnection(otherConn: Socket): boolean {
+    return this._conn.remoteAddress === otherConn.remoteAddress && this._conn.remotePort === otherConn.remotePort;
+  }
 }
 
 export class ReplicasManager {

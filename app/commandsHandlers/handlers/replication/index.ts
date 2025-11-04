@@ -52,38 +52,46 @@ const EMPTY_RDB_BUFFER = Buffer.from(EMPTY_RDB_HEX, "hex");
 
 export const psync = (command: RespCommand, connection: Socket) => {
   const args = command.args;
-  if (!isBulkStringArray(args)) {
-    return connection.write(RespEncoder.encodeError("ERR wrong number of arguments"));
-  }
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
 
   const [firstArg, secondArg] = args.map((arg) => arg.value);
 
-  if (firstArg === "?" && secondArg === "-1") {
-    console.log(`[PSYNC] Full resync requested from ${connection.remoteAddress}`);
-
-    // ✅ Step 1: Stop streaming temporarily for this connection
-    connection.pause();
-
-    // ✅ Step 2: Send FULLRESYNC header
+  if (firstArg == "?" && secondArg == "-1") {
     connection.write(RespEncoder.encodeString(`FULLRESYNC ${config.id} 0`));
 
-    // ✅ Step 3: Send fake empty RDB
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
-    connection.write("\r\n");
 
-    // ✅ Step 4: Resume connection and start streaming commands
-    connection.resume();
+    if (replicasManager.replicas.find((rep) => rep.isSameConnection(connection))) {
+      return;
+    }
 
-    connection.write(`*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$1\r\n1\r\n`);
-    connection.write(`*3\r\n$3\r\nSET\r\n$3\r\nbar\r\n$1\r\n2\r\n`);
-    connection.write(`*3\r\n$3\r\nSET\r\n$3\r\nbaz\r\n$1\r\n3\r\n`);
+    connection.write(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("SET"),
+        RespEncoder.encodeString("foo"),
+        RespEncoder.encodeString("1"),
+      ])
+    );
+    connection.write(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("SET"),
+        RespEncoder.encodeString("bar"),
+        RespEncoder.encodeString("2"),
+      ])
+    );
+    connection.write(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("SET"),
+        RespEncoder.encodeString("baz"),
+        RespEncoder.encodeString("3"),
+      ])
+    );
 
-    // ✅ Step 5: Register replica after initial sync is done
     replicasManager.addReplica(new Replica(connection));
-    console.log("[PSYNC] Replica added successfully.");
+    console.log("Replica added.");
     return;
   }
 
-  connection.write(RespEncoder.encodeError("ERR unknown PSYNC option"));
+  return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
