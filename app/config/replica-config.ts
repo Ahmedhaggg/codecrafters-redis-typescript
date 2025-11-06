@@ -70,7 +70,7 @@ export const connectReplicaToMaster = () => {
       const commands = str
         .split(/\*(?=\d+)/)
         .filter(Boolean)
-        .map((chunk) => "*" + chunk.trim());
+        .map((chunk) => "*" + chunk);
 
       console.log("replica received commands: ", commands);
 
