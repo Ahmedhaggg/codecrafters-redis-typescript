@@ -118,7 +118,7 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
     if (waitCommand.syncedReplicasCount >= replicasToWaitFor) {
       console.log(`[WAIT] Enough replicas (${waitCommand.syncedReplicasCount}) — replying early`);
-      connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+      connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
       clearInterval(interval);
       waitCommand.reset();
       return;
@@ -126,7 +126,7 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
     if (elapsed >= timeoutMs) {
       console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
-      connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+      connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
       clearInterval(interval);
       waitCommand.reset();
       return;
