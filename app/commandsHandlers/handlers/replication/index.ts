@@ -67,13 +67,13 @@ export const psync = (command: RespCommand, connection: Socket) => {
 
     console.log("Replica added.");
 
-    connection.write(
-      RespEncoder.encodeArray([
-        RespEncoder.encodeString("REPLCONF"),
-        RespEncoder.encodeString("GETACK"),
-        RespEncoder.encodeString("*"),
-      ])
-    );
+    // connection.write(
+    //   RespEncoder.encodeArray([
+    //     RespEncoder.encodeString("REPLCONF"),
+    //     RespEncoder.encodeString("GETACK"),
+    //     RespEncoder.encodeString("*"),
+    //   ])
+    // );
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
