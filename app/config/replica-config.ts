@@ -101,6 +101,7 @@ export const connectReplicaToMaster = () => {
           }
 
           if (startOffset) {
+            console.log("buffer increase : ", Buffer.byteLength(str));
             config.offset += Buffer.byteLength(str);
           }
         } catch (err) {
