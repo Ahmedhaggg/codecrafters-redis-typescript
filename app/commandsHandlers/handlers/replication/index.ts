@@ -58,6 +58,7 @@ export const replconf = (command: RespCommand, conn: Socket) => {
 
   if (firstArg === "ACK") {
     waitCommand.pendingSyncedCount++;
+    return;
   }
 
   conn.write(RespEncoder.encodeError("ERR unknown REPLCONF option"));
