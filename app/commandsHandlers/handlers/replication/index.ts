@@ -105,6 +105,8 @@ export const wait = (command: RespCommand, connection: Socket) => {
   waitCommand.isPending = true;
   waitCommand.syncedReplicasCount = 0;
 
+  connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+
   let elapsed = 0;
   const intervalStep = 100;
 
