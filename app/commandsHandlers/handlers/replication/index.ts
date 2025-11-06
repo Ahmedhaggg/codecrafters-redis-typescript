@@ -8,10 +8,10 @@ import { Replica, replicasManager } from "../../../store/replicas";
 
 const waitCommand = {
   isPending: false,
-  syncedReplicasCount: 0,
+  waitOffset: 0,
   reset() {
     this.isPending = false;
-    this.syncedReplicasCount = 0;
+    this.waitOffset = 0;
   },
 };
 
@@ -56,9 +56,11 @@ export const replconf = (command: RespCommand, conn: Socket) => {
     return;
   }
 
-  if (firstArg == "ACK") {
-    waitCommand.syncedReplicasCount++;
-    // RespEncoder.encodeSimpleString("OK");
+  if (firstArg === "ACK") {
+    const replica = replicasManager.getReplicaByConnection(conn);
+    if (replica) {
+      replica.offset = parseInt(secondArg, 10);
+    }
     return;
   }
 
@@ -107,44 +109,19 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
 
-  waitCommand.isPending = true;
-  waitCommand.syncedReplicasCount = 0;
-
-  if (replicasToWaitFor == 0) {
+  if (replicasToWaitFor === 0) {
     connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
     return;
   }
 
+  // ✅ Capture master's current replication offset snapshot
+  waitCommand.isPending = true;
+  waitCommand.waitOffset = config.offset; // offset after last write
+
   let elapsed = 0;
   const intervalStep = 100;
 
-  const interval = setInterval(() => {
-    elapsed += intervalStep;
-
-    if (waitCommand.syncedReplicasCount >= replicasToWaitFor) {
-      console.log(`[WAIT] Enough replicas (${waitCommand.syncedReplicasCount}) — replying early`);
-      console.log("replicasCount: ", replicasManager.replicasCount);
-      console.log("replicasLength: ", replicasManager.replicas.length);
-      console.log("syncedReplicasCount: ", waitCommand.syncedReplicasCount);
-      connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
-      clearInterval(interval);
-      waitCommand.reset();
-      return;
-    }
-
-    if (elapsed >= timeoutMs) {
-      console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
-      console.log("replicasCount: ", replicasManager.replicasCount);
-      console.log("replicasLength: ", replicasManager.replicas.length);
-      console.log("syncedReplicasCount: ", waitCommand.syncedReplicasCount);
-
-      connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
-      clearInterval(interval);
-      waitCommand.reset();
-      return;
-    }
-  }, intervalStep);
-
+  // Ask all replicas to send ACKs with their offsets
   replicasManager.replicas.forEach((repl) => {
     repl.send(
       RespEncoder.encodeArray([
@@ -154,4 +131,93 @@ export const wait = (command: RespCommand, connection: Socket) => {
       ])
     );
   });
+
+  const interval = setInterval(() => {
+    elapsed += intervalStep;
+
+    // ✅ Count how many replicas have caught up to or beyond waitOffset
+    const syncedReplicas = replicasManager.replicas.filter((r) => r.offset >= waitCommand.waitOffset).length;
+
+    if (syncedReplicas >= replicasToWaitFor) {
+      console.log(`[WAIT] Enough replicas (${syncedReplicas}) — replying early`);
+      connection.write(RespEncoder.encodeInteger(syncedReplicas));
+      clearInterval(interval);
+      waitCommand.reset();
+      return;
+    }
+
+    if (elapsed >= timeoutMs) {
+      console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
+      connection.write(RespEncoder.encodeInteger(syncedReplicas));
+      clearInterval(interval);
+      waitCommand.reset();
+      return;
+    }
+  }, intervalStep);
 };
+
+// export const wait = (command: RespCommand, connection: Socket) => {
+//   const args = command.args;
+
+//   if (!isBulkStringArray(args) || args.length < 2) {
+//     connection.write(RespEncoder.encodeError("ERR wrong number of arguments"));
+//     return;
+//   }
+
+//   const [replicasToWaitFor, timeoutMs] = args.map((arg) => parseInt(arg.value, 10));
+
+//   if (isNaN(replicasToWaitFor) || isNaN(timeoutMs)) {
+//     connection.write(RespEncoder.encodeError("ERR invalid arguments"));
+//     return;
+//   }
+
+//   console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
+
+//   waitCommand.isPending = true;
+//   waitCommand.syncedReplicasCount = 0;
+
+//   if (replicasToWaitFor == 0) {
+//     connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+//     return;
+//   }
+
+//   let elapsed = 0;
+//   const intervalStep = 100;
+
+//   const interval = setInterval(() => {
+//     elapsed += intervalStep;
+
+//     if (waitCommand.syncedReplicasCount >= replicasToWaitFor) {
+//       console.log(`[WAIT] Enough replicas (${waitCommand.syncedReplicasCount}) — replying early`);
+//       console.log("replicasCount: ", replicasManager.replicasCount);
+//       console.log("replicasLength: ", replicasManager.replicas.length);
+//       console.log("syncedReplicasCount: ", waitCommand.syncedReplicasCount);
+//       connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+//       clearInterval(interval);
+//       waitCommand.reset();
+//       return;
+//     }
+
+//     if (elapsed >= timeoutMs) {
+//       console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
+//       console.log("replicasCount: ", replicasManager.replicasCount);
+//       console.log("replicasLength: ", replicasManager.replicas.length);
+//       console.log("syncedReplicasCount: ", waitCommand.syncedReplicasCount);
+
+//       connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+//       clearInterval(interval);
+//       waitCommand.reset();
+//       return;
+//     }
+//   }, intervalStep);
+
+//   replicasManager.replicas.forEach((repl) => {
+//     repl.send(
+//       RespEncoder.encodeArray([
+//         RespEncoder.encodeString("REPLCONF"),
+//         RespEncoder.encodeString("GETACK"),
+//         RespEncoder.encodeString("*"),
+//       ])
+//     );
+//   });
+// };
