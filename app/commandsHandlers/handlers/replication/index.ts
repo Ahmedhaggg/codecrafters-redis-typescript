@@ -85,8 +85,6 @@ export const psync = (command: RespCommand, connection: Socket) => {
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
 
-let hasPendingWrite = false;
-
 export const wait = (command: RespCommand, connection: Socket) => {
   const args = command.args;
 
@@ -106,12 +104,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   waitCommand.isPending = true;
   waitCommand.syncedReplicasCount = 0;
-
-  // 🔥 Early exit if no write occurred
-  if (!hasPendingWrite) {
-    connection.write(RespEncoder.encodeInteger(0));
-    return;
-  }
 
   if (replicasToWaitFor == 0) {
     connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
@@ -139,7 +131,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
       connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
       clearInterval(interval);
       waitCommand.reset();
-      hasPendingWrite = false;
       return;
     }
 
@@ -148,7 +139,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
       connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
       clearInterval(interval);
       waitCommand.reset();
-      hasPendingWrite = false;
       return;
     }
   }, intervalStep);
