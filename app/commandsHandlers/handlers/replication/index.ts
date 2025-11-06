@@ -77,14 +77,13 @@ export const psync = (command: RespCommand, connection: Socket) => {
   const [firstArg, secondArg] = args.map((arg) => arg.value);
 
   if (firstArg == "?" && secondArg == "-1") {
-    connection.write(RespEncoder.encodeString(`FULLRESYNC ${config.id} 0`));
+    connection.write(RespEncoder.encodeSimpleString(`FULLRESYNC ${config.id} 0`));
 
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
 
     replicasManager.addReplica(new Replica(connection));
     console.log("Replica added.");
-    connection.write(RespEncoder.encodeSimpleString("OK"));
     return;
   }
 
