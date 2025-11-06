@@ -1,10 +1,15 @@
 import type { Socket } from "net";
 import { config } from "../../../config/config";
 import { RespEncoder } from "../../../resp/encoder";
-import type { RespCommand } from "../../../resp/objects";
+import { RespCommand } from "../../../resp/objects";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
 import { Replica, replicasManager } from "../../../store/replicas";
+
+const waitCommand = {
+  isPending: false,
+  syncedReplicasCount: 0,
+};
 
 export const info = (command: RespCommand) => {
   if (!isContainsArgs(command)) return RespEncoder.encodeError("Invalid key or value");
@@ -42,6 +47,11 @@ export const replconf = (command: RespCommand) => {
     return RespEncoder.encodeSimpleString("OK");
   }
 
+  if (firstArg == "ACK" && waitCommand.isPending) {
+    waitCommand.syncedReplicasCount++;
+    RespEncoder.encodeSimpleString("OK");
+  }
+
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
 
@@ -77,9 +87,15 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   const [firstArg, secondArg] = args.map((arg) => parseInt(arg.value));
   console.log("[firstArg, secondArg]: ", [firstArg, secondArg]);
+  waitCommand.isPending = true;
+  waitCommand.syncedReplicasCount = 0;
+
   setTimeout(() => {
-    console.log("WAIT", secondArg);
-    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+    console.log("Inside WAIT Timeout", secondArg);
+    connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+    waitCommand.isPending = false;
+    waitCommand.syncedReplicasCount = 0;
   }, secondArg);
-  connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+
+  // connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
 };
