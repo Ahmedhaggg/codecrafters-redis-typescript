@@ -97,5 +97,5 @@ export const wait = (command: RespCommand, connection: Socket) => {
     waitCommand.syncedReplicasCount = 0;
   }, secondArg);
 
-  // connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+  connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
 };
