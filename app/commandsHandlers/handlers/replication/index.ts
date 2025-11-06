@@ -128,6 +128,7 @@ export const wait = (command: RespCommand, connection: Socket) => {
       console.log("syncedReplicasCount: ", waitCommand.syncedReplicasCount);
       connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
       clearInterval(interval);
+      waitCommand.reset();
       return;
     }
 
@@ -139,6 +140,7 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
       connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
       clearInterval(interval);
+      waitCommand.reset();
       return;
     }
   }, intervalStep);
