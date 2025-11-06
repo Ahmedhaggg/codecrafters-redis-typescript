@@ -78,6 +78,7 @@ export const psync = (command: RespCommand, connection: Socket) => {
     //     RespEncoder.encodeString("*"),
     //   ])
     // );
+    return;
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
