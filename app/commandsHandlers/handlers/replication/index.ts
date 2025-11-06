@@ -109,6 +109,10 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   const waitInterval = setInterval(() => {
     if (waitCommand.pendingSyncedCount >= replicasToWaitFor || timeoutMs <= 0) {
+      console.log("replicasCount: ", replicasManager.replicasCount);
+      console.log("replicasLength: ", replicasManager.replicas.length);
+      console.log("syncedReplicasCount: ", waitCommand.pendingSyncedCount);
+
       connection.write(RespEncoder.encodeInteger(waitCommand.pendingSyncedCount ?? replicasManager.replicasCount));
       waitCommand.reset();
       clearInterval(waitInterval);
