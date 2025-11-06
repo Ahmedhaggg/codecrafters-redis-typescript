@@ -52,6 +52,8 @@ export const connectReplicaToMaster = () => {
     currentHandShakeStep++;
   });
 
+  let startOffset: boolean = false;
+
   client.on("data", (data) => {
     if (currentHandShakeStep === 1) {
       sendListeningPort();
@@ -88,6 +90,7 @@ export const connectReplicaToMaster = () => {
           if (command.command == "SET") {
             set(command);
           } else if (command.command == "REPLCONF") {
+            startOffset = true;
             client.write(
               RespEncoder.encodeArray([
                 RespEncoder.encodeString("REPLCONF"),
@@ -97,8 +100,10 @@ export const connectReplicaToMaster = () => {
             );
           }
 
-          console.log("buffer increase: ", Buffer.byteLength(str));
-          config.offset += Buffer.byteLength(str);
+          if (startOffset) {
+            console.log("buffer increase : ", Buffer.byteLength(str));
+            config.offset += Buffer.byteLength(str);
+          }
         } catch (err) {
           console.log("error in replica handshake command : ", err);
           continue;
