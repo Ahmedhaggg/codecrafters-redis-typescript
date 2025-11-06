@@ -9,11 +9,9 @@ import { Replica, replicasManager } from "../../../store/replicas";
 const waitCommand = {
   isPending: false,
   syncedReplicasCount: 0,
-  expectedOffset: 0,
   reset() {
     this.isPending = false;
     this.syncedReplicasCount = 0;
-    this.expectedOffset = 0;
   },
 };
 
@@ -54,17 +52,8 @@ export const replconf = (command: RespCommand) => {
   }
 
   if (firstArg == "ACK" && waitCommand.isPending) {
-    const replicaOffset = parseInt(secondArg, 10);
-    console.log(`[REPLCONF ACK] Replica offset: ${replicaOffset}, Expected: ${waitCommand.expectedOffset}`);
-
-    // Only count replicas that have caught up to the expected offset
-    if (replicaOffset >= waitCommand.expectedOffset) {
-      waitCommand.syncedReplicasCount++;
-      console.log(`[REPLCONF ACK] Synced replicas: ${waitCommand.syncedReplicasCount}`);
-    }
-
-    // Don't send OK response back to replica for ACK during WAIT
-    return;
+    waitCommand.syncedReplicasCount++;
+    RespEncoder.encodeSimpleString("OK");
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
@@ -111,24 +100,15 @@ export const wait = (command: RespCommand, connection: Socket) => {
     return;
   }
 
-  console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs, currentOffset: config.offset });
-
-  // If no replicas connected, return 0 immediately
-  if (replicasManager.replicasCount === 0 || replicasToWaitFor === 0) {
-    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
-    return;
-  }
-
-  // If offset is 0 (no writes have been propagated), all replicas are in sync
-  if (config.offset === 0) {
-    console.log("[WAIT] No writes propagated (offset=0), returning all replicas");
-    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
-    return;
-  }
+  console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
 
   waitCommand.isPending = true;
   waitCommand.syncedReplicasCount = 0;
-  waitCommand.expectedOffset = config.offset;
+
+  if (replicasToWaitFor == 0) {
+    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+    return;
+  }
 
   let elapsed = 0;
   const intervalStep = 100;
@@ -145,7 +125,7 @@ export const wait = (command: RespCommand, connection: Socket) => {
     }
 
     if (elapsed >= timeoutMs) {
-      console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying with ${waitCommand.syncedReplicasCount} replicas`);
+      console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
       connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
       clearInterval(interval);
       waitCommand.reset();
@@ -153,7 +133,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
     }
   }, intervalStep);
 
-  // Send GETACK to all replicas to check their offsets
   replicasManager.replicas.forEach((repl) => {
     repl.send(
       RespEncoder.encodeArray([
