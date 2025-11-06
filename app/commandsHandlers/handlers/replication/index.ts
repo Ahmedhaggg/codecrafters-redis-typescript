@@ -128,18 +128,17 @@ export const wait = (command: RespCommand, connection: Socket) => {
     }
 
     timeoutMs -= intervalStep;
-
-    // Periodically ask replicas for GETACK
-    replicasManager.replicas.forEach((repl) => {
-      repl.send(
-        RespEncoder.encodeArray([
-          RespEncoder.encodeString("REPLCONF"),
-          RespEncoder.encodeString("GETACK"),
-          RespEncoder.encodeString("*"),
-        ])
-      );
-    });
   }, intervalStep);
+  // Periodically ask replicas for GETACK
+  replicasManager.replicas.forEach((repl) => {
+    repl.send(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("REPLCONF"),
+        RespEncoder.encodeString("GETACK"),
+        RespEncoder.encodeString("*"),
+      ])
+    );
+  });
 };
 
 // export const wait = (command: RespCommand, connection: Socket) => {
