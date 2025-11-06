@@ -88,6 +88,7 @@ export const connectReplicaToMaster = () => {
           console.log("command received:", command.args);
 
           if (command.command == "SET") {
+            console.log("before set in the replica");
             set(command);
           } else if (command.command == "REPLCONF") {
             startOffset = true;
