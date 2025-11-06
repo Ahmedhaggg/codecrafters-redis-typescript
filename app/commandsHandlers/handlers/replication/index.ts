@@ -79,7 +79,6 @@ export const psync = (command: RespCommand, connection: Socket) => {
 
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
-    console.log("replicasManager.replicas : ", replicasManager.replicas);
 
     replicasManager.addReplica(new Replica(connection));
     console.log("Replica added.");
