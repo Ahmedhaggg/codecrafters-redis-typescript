@@ -89,11 +89,13 @@ export const connectReplicaToMaster = () => {
           if (command.command == "SET") {
             set(command);
           } else if (command.command == "REPLCONF") {
-            RespEncoder.encodeArray([
-              RespEncoder.encodeString("REPLCONF"),
-              RespEncoder.encodeString("ACK"),
-              RespEncoder.encodeString("0"),
-            ]);
+            client.write(
+              RespEncoder.encodeArray([
+                RespEncoder.encodeString("REPLCONF"),
+                RespEncoder.encodeString("ACK"),
+                RespEncoder.encodeString("0"),
+              ])
+            );
           }
         } catch (err) {
           console.log("error in replica handshake command : ", err);
