@@ -9,13 +9,13 @@ import { typeKey } from "./handlers/type-item";
 import { xAdd, xRange, xRead } from "./handlers/streams";
 import { type Socket } from "net";
 import { incr } from "./handlers/incr";
-import { info, psync, replconf } from "./handlers/replication";
+import { info, psync, replconf, wait } from "./handlers/replication";
 
 type ReqResCommands = Exclude<
   CommandName,
-  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC"
+  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC" | "WAIT"
 >;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC">;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -40,6 +40,7 @@ const observersCommandHandlers = {
   BLPOP: pLPop,
   XREAD: xRead,
   PSYNC: psync,
+  WAIT: wait,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 type GetCommandHandler =

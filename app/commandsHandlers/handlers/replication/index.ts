@@ -62,27 +62,6 @@ export const psync = (command: RespCommand, connection: Socket) => {
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
     console.log("replicasManager.replicas : ", replicasManager.replicas);
-    // connection.write(
-    //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("SET"),
-    //     RespEncoder.encodeString("foo"),
-    //     RespEncoder.encodeString("1"),
-    //   ])
-    // );
-    // connection.write(
-    //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("SET"),
-    //     RespEncoder.encodeString("bar"),
-    //     RespEncoder.encodeString("2"),
-    //   ])
-    // );
-    // connection.write(
-    //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("SET"),
-    //     RespEncoder.encodeString("baz"),
-    //     RespEncoder.encodeString("3"),
-    //   ])
-    // );
 
     replicasManager.addReplica(new Replica(connection));
     console.log("Replica added.");
@@ -90,4 +69,15 @@ export const psync = (command: RespCommand, connection: Socket) => {
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
+};
+
+export const wait = (command: RespCommand, connection: Socket) => {
+  const args = command.args;
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
+
+  const [firstArg, secondArg] = args.map((arg) => parseInt(arg.value));
+
+  setTimeout(() => {
+    connection.write(RespEncoder.encodeInteger(0));
+  }, secondArg);
 };
