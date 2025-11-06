@@ -113,16 +113,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
   let elapsed = 0;
   const intervalStep = 100;
 
-  replicasManager.replicas.forEach((repl) => {
-    repl.send(
-      RespEncoder.encodeArray([
-        RespEncoder.encodeString("REPLCONF"),
-        RespEncoder.encodeString("GETACK"),
-        RespEncoder.encodeString("*"),
-      ])
-    );
-  });
-
   const interval = setInterval(() => {
     elapsed += intervalStep;
 
@@ -142,4 +132,14 @@ export const wait = (command: RespCommand, connection: Socket) => {
       return;
     }
   }, intervalStep);
+
+  replicasManager.replicas.forEach((repl) => {
+    repl.send(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("REPLCONF"),
+        RespEncoder.encodeString("GETACK"),
+        RespEncoder.encodeString("*"),
+      ])
+    );
+  });
 };
