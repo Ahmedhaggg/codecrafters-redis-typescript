@@ -36,27 +36,31 @@ export const info = (command: RespCommand) => {
   return RespEncoder.encodeString("role:master");
 };
 
-export const replconf = (command: RespCommand) => {
+export const replconf = (command: RespCommand, conn: Socket) => {
   const args = command.args;
 
-  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
+  if (!isBulkStringArray(args)) {
+    conn.write(RespEncoder.encodeError("ERR wrong number of arguments"));
+    return;
+  }
 
   const [firstArg, secondArg] = args.map((arg) => arg.value);
 
   if (firstArg == "capa" && secondArg == "psync2") {
-    return RespEncoder.encodeSimpleString("OK");
+    conn.write(RespEncoder.encodeSimpleString("OK"));
+    return;
   }
 
   if (firstArg == "listening-port" && typeof parseInt(secondArg) == "number") {
-    return RespEncoder.encodeSimpleString("OK");
+    conn.write(RespEncoder.encodeSimpleString("OK"));
+    return;
   }
 
   if (firstArg == "ACK" && waitCommand.isPending) {
     waitCommand.syncedReplicasCount++;
-    return;
   }
 
-  return RespEncoder.encodeError("ERR unknown REPLCONF option");
+  // return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
 
 const EMPTY_RDB_HEX =

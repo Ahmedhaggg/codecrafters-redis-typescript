@@ -13,9 +13,9 @@ import { info, psync, replconf, wait } from "./handlers/replication";
 
 type ReqResCommands = Exclude<
   CommandName,
-  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC" | "WAIT"
+  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC" | "WAIT" | "REPLCONF"
 >;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT">;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -33,7 +33,6 @@ const commandHandlers = {
   XRANGE: xRange,
   INCR: incr,
   INFO: info,
-  REPLCONF: replconf,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
@@ -41,6 +40,7 @@ const observersCommandHandlers = {
   XREAD: xRead,
   PSYNC: psync,
   WAIT: wait,
+  REPLCONF: replconf,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 type GetCommandHandler =
