@@ -22,7 +22,11 @@ export const set = (command: RespCommand): string => {
   const expiryCommand = command.args[2];
   const expirySeconds = command.args[3];
 
+  console.log("key: ---- ", key);
+  console.log("value: ---- ", value);
+
   if (!expiryCommand && !expirySeconds) {
+    console.log("beforrrrrrrrrrrrrrrrrrrr propagted");
     StoreManager.get().set(key.value, value.value);
     handleReplicaSync(command);
     return RespEncoder.encodeSimpleString("OK");
