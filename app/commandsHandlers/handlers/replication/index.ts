@@ -109,7 +109,7 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   const waitInterval = setInterval(() => {
     if (waitCommand.pendingSyncedCount >= replicasToWaitFor || timeoutMs <= 0) {
-      connection.write(RespEncoder.encodeInteger(waitCommand.pendingSyncedCount));
+      connection.write(RespEncoder.encodeInteger(waitCommand.pendingSyncedCount ?? replicasManager.replicasCount));
       waitCommand.reset();
       clearInterval(waitInterval);
       return;
