@@ -79,8 +79,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
   console.log("[firstArg, secondArg]: ", [firstArg, secondArg]);
   setTimeout(() => {
     console.log("WAIT", secondArg);
-    connection.write(RespEncoder.encodeInteger(0));
+    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
   }, secondArg);
-
-  connection.write(RespEncoder.encodeInteger(0));
 };
