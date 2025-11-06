@@ -1,7 +1,6 @@
 import * as net from "net";
 import { config } from "./config";
 import { RespEncoder } from "../resp/encoder";
-import { handleCommand } from "../commandsHandlers";
 import { RespCommand } from "../resp/objects";
 import { RespDecoder } from "../resp/decoder";
 import { set } from "../commandsHandlers/handlers/set";
@@ -53,6 +52,8 @@ export const connectReplicaToMaster = () => {
     currentHandShakeStep++;
   });
 
+  let startOffset: boolean = false;
+
   client.on("data", (data) => {
     if (currentHandShakeStep === 1) {
       sendListeningPort();
@@ -89,13 +90,18 @@ export const connectReplicaToMaster = () => {
           if (command.command == "SET") {
             set(command);
           } else if (command.command == "REPLCONF") {
+            startOffset = true;
             client.write(
               RespEncoder.encodeArray([
                 RespEncoder.encodeString("REPLCONF"),
                 RespEncoder.encodeString("ACK"),
-                RespEncoder.encodeString("0"),
+                RespEncoder.encodeString(config.offset.toString()),
               ])
             );
+          }
+
+          if (startOffset) {
+            config.offset += Buffer.byteLength(str);
           }
         } catch (err) {
           console.log("error in replica handshake command : ", err);

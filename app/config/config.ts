@@ -38,7 +38,7 @@ const loadConfig = (): AppConfig => {
 
   const id = randomBytes(20).toString("hex");
 
-  const offset = 0;
+  let offset = 0;
 
   return {
     id,

@@ -42,11 +42,7 @@ export const replconf = (command: RespCommand) => {
     return RespEncoder.encodeSimpleString("OK");
   }
 
-  if (firstArg == "ACK") {
-    return RespEncoder.encodeSimpleString("OK");
-  }
-  console.log("beforeEEEEEEEEEE", command);
-  return RespEncoder.encodeError("ERR unknown REPLCONF option " + firstArg + " " + secondArg);
+  return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
 
 const EMPTY_RDB_HEX =
@@ -66,18 +62,30 @@ export const psync = (command: RespCommand, connection: Socket) => {
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
     console.log("replicasManager.replicas : ", replicasManager.replicas);
-
-    replicasManager.addReplica(new Replica(connection));
-
-    console.log("Replica added.");
-
     // connection.write(
     //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("REPLCONF"),
-    //     RespEncoder.encodeString("GETACK"),
-    //     RespEncoder.encodeString("*"),
+    //     RespEncoder.encodeString("SET"),
+    //     RespEncoder.encodeString("foo"),
+    //     RespEncoder.encodeString("1"),
     //   ])
     // );
+    // connection.write(
+    //   RespEncoder.encodeArray([
+    //     RespEncoder.encodeString("SET"),
+    //     RespEncoder.encodeString("bar"),
+    //     RespEncoder.encodeString("2"),
+    //   ])
+    // );
+    // connection.write(
+    //   RespEncoder.encodeArray([
+    //     RespEncoder.encodeString("SET"),
+    //     RespEncoder.encodeString("baz"),
+    //     RespEncoder.encodeString("3"),
+    //   ])
+    // );
+
+    replicasManager.addReplica(new Replica(connection));
+    console.log("Replica added.");
     return;
   }
 
