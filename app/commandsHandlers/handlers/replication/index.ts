@@ -42,6 +42,10 @@ export const replconf = (command: RespCommand) => {
     return RespEncoder.encodeSimpleString("OK");
   }
 
+  if (firstArg == "ACK") {
+    return RespEncoder.encodeSimpleString("OK");
+  }
+
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
 
