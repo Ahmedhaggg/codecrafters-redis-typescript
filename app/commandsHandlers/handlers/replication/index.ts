@@ -46,7 +46,7 @@ export const replconf = (command: RespCommand) => {
     return RespEncoder.encodeSimpleString("OK");
   }
 
-  return RespEncoder.encodeError("ERR unknown REPLCONF option");
+  return RespEncoder.encodeError("ERR unknown REPLCONF option " + firstArg + " " + secondArg);
 };
 
 const EMPTY_RDB_HEX =
