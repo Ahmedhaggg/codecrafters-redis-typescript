@@ -81,4 +81,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
     console.log("WAIT", secondArg);
     connection.write(RespEncoder.encodeInteger(0));
   }, secondArg);
+
+  connection.write(RespEncoder.encodeInteger(0));
 };
