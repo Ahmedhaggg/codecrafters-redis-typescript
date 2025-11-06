@@ -53,7 +53,7 @@ export const replconf = (command: RespCommand) => {
 
   if (firstArg == "ACK" && waitCommand.isPending) {
     waitCommand.syncedReplicasCount++;
-    RespEncoder.encodeSimpleString("OK");
+    return;
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
