@@ -62,31 +62,18 @@ export const psync = (command: RespCommand, connection: Socket) => {
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
     console.log("replicasManager.replicas : ", replicasManager.replicas);
-    // connection.write(
-    //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("SET"),
-    //     RespEncoder.encodeString("foo"),
-    //     RespEncoder.encodeString("1"),
-    //   ])
-    // );
-    // connection.write(
-    //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("SET"),
-    //     RespEncoder.encodeString("bar"),
-    //     RespEncoder.encodeString("2"),
-    //   ])
-    // );
-    // connection.write(
-    //   RespEncoder.encodeArray([
-    //     RespEncoder.encodeString("SET"),
-    //     RespEncoder.encodeString("baz"),
-    //     RespEncoder.encodeString("3"),
-    //   ])
-    // );
 
     replicasManager.addReplica(new Replica(connection));
+
     console.log("Replica added.");
-    return;
+
+    connection.write(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("REPLCONF"),
+        RespEncoder.encodeString("GETACK"),
+        RespEncoder.encodeString("*"),
+      ])
+    );
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
