@@ -21,8 +21,8 @@ const server = net.createServer((connection) => {
         return;
       }
       console.log("before handle command", command);
-      handleReplicaSync(command);
       handleCommand(command, connection);
+      handleReplicaSync(command);
     } catch (error) {
       console.log("Error: ", error);
     }
