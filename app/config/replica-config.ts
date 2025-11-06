@@ -100,7 +100,7 @@ export const connectReplicaToMaster = () => {
             );
           }
 
-          if (startOffset) {
+          if (startOffset && command.command !== "REPLCONF") {
             console.log("buffer increase : ", Buffer.byteLength(str));
             config.offset += Buffer.byteLength(str);
           }
