@@ -8,10 +8,10 @@ import { Replica, replicasManager } from "../../../store/replicas";
 
 const waitCommand = {
   isPending: false,
-  waitOffset: 0,
+  pendingSyncedCount: 0,
   reset() {
     this.isPending = false;
-    this.waitOffset = 0;
+    this.pendingSyncedCount = 0;
   },
 };
 
@@ -108,16 +108,13 @@ export const wait = (command: RespCommand, connection: Socket) => {
     return;
   }
 
-  // Track number of replicas that acknowledged this WAIT
-  let ackRep = 0;
-
   const intervalStep = 100;
 
   const waitInterval = setInterval(() => {
-    if (ackRep >= replicasToWaitFor || timeoutMs <= 0) {
-      connection.write(RespEncoder.encodeInteger(ackRep));
+    if (waitCommand.pendingSyncedCount >= replicasToWaitFor || timeoutMs <= 0) {
+      connection.write(RespEncoder.encodeInteger(waitCommand.pendingSyncedCount));
+      waitCommand.reset();
       clearInterval(waitInterval);
-      ackRep = 0;
       return;
     }
 
