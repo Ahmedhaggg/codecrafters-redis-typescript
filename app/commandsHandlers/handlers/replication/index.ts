@@ -106,8 +106,10 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
 
-  waitCommand.isPending = true;
-  waitCommand.syncedReplicasCount = 0;
+  if (!waitCommand.isPending) {
+    waitCommand.isPending = true;
+    waitCommand.syncedReplicasCount = 0;
+  }
 
   if (replicasToWaitFor == 0) {
     connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
