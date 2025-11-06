@@ -100,59 +100,45 @@ export const wait = (command: RespCommand, connection: Socket) => {
     return;
   }
 
-  const [replicasToWaitFor, timeoutMs] = args.map((arg) => parseInt(arg.value, 10));
+  const replicasToWaitFor = parseInt(args[0].value, 10);
+  let timeoutMs = parseInt(args[1].value, 10);
 
   if (isNaN(replicasToWaitFor) || isNaN(timeoutMs)) {
     connection.write(RespEncoder.encodeError("ERR invalid arguments"));
     return;
   }
 
-  console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
-
-  if (replicasToWaitFor === 0) {
-    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+  // If no pending writes, return immediately with number of replicas connected
+  if (replicasManager.replicasCount === 0) {
+    connection.write(RespEncoder.encodeInteger(0));
     return;
   }
 
-  // ✅ Capture master's current replication offset snapshot
-  waitCommand.isPending = true;
-  waitCommand.waitOffset = config.offset; // offset after last write
+  // Track number of replicas that acknowledged this WAIT
+  let ackRep = 0;
 
-  let elapsed = 0;
   const intervalStep = 100;
 
-  // Ask all replicas to send ACKs with their offsets
-  replicasManager.replicas.forEach((repl) => {
-    repl.send(
-      RespEncoder.encodeArray([
-        RespEncoder.encodeString("REPLCONF"),
-        RespEncoder.encodeString("GETACK"),
-        RespEncoder.encodeString("*"),
-      ])
-    );
-  });
-
-  const interval = setInterval(() => {
-    elapsed += intervalStep;
-
-    // ✅ Count how many replicas have caught up to or beyond waitOffset
-    const syncedReplicas = replicasManager.replicas.filter((r) => r.offset >= waitCommand.waitOffset).length;
-
-    if (syncedReplicas >= replicasToWaitFor) {
-      console.log(`[WAIT] Enough replicas (${syncedReplicas}) — replying early`);
-      connection.write(RespEncoder.encodeInteger(syncedReplicas));
-      clearInterval(interval);
-      waitCommand.reset();
+  const waitInterval = setInterval(() => {
+    if (ackRep >= replicasToWaitFor || timeoutMs <= 0) {
+      connection.write(RespEncoder.encodeInteger(ackRep));
+      clearInterval(waitInterval);
+      ackRep = 0;
       return;
     }
 
-    if (elapsed >= timeoutMs) {
-      console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
-      connection.write(RespEncoder.encodeInteger(syncedReplicas));
-      clearInterval(interval);
-      waitCommand.reset();
-      return;
-    }
+    timeoutMs -= intervalStep;
+
+    // Periodically ask replicas for GETACK
+    replicasManager.replicas.forEach((repl) => {
+      repl.send(
+        RespEncoder.encodeArray([
+          RespEncoder.encodeString("REPLCONF"),
+          RespEncoder.encodeString("GETACK"),
+          RespEncoder.encodeString("*"),
+        ])
+      );
+    });
   }, intervalStep);
 };
 
