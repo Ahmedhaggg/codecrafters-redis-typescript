@@ -13,6 +13,10 @@ export const handleReplicaSync = (command: RespCommand) => {
     ]);
 
     console.log("sync command to replica encodedCommand: ", encodedCommand);
+    console.log(
+      "count before syncing",
+      replicasManager.replicas.map((r) => (r.conn as any).id)
+    );
     replicasManager.replicas.forEach((replica) => {
       replica.send(encodedCommand);
     });
