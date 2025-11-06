@@ -1,7 +1,7 @@
 import type { Socket } from "net";
 import { config } from "../../../config/config";
 import { RespEncoder } from "../../../resp/encoder";
-import { RespCommand } from "../../../resp/objects";
+import { RespBulkString, RespCommand } from "../../../resp/objects";
 import { isContainsArgs } from "../../validation/contains-args.validator";
 import { isBulkStringArray } from "../../validation/isBulkStringList.validator";
 import { Replica, replicasManager } from "../../../store/replicas";
@@ -84,13 +84,12 @@ export const psync = (command: RespCommand, connection: Socket) => {
 
     replicasManager.addReplica(new Replica(connection));
     console.log("Replica added.");
+    connection.write(RespEncoder.encodeSimpleString("OK"));
     return;
   }
 
   return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
-
-let syncedBefore = false;
 
 export const wait = (command: RespCommand, connection: Socket) => {
   const args = command.args;
