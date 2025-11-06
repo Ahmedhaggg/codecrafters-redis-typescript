@@ -36,31 +36,27 @@ export const info = (command: RespCommand) => {
   return RespEncoder.encodeString("role:master");
 };
 
-export const replconf = (command: RespCommand, conn: Socket) => {
+export const replconf = (command: RespCommand) => {
   const args = command.args;
 
-  if (!isBulkStringArray(args)) {
-    conn.write(RespEncoder.encodeError("ERR wrong number of arguments"));
-    return;
-  }
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
 
   const [firstArg, secondArg] = args.map((arg) => arg.value);
 
   if (firstArg == "capa" && secondArg == "psync2") {
-    conn.write(RespEncoder.encodeSimpleString("OK"));
-    return;
+    return RespEncoder.encodeSimpleString("OK");
   }
 
   if (firstArg == "listening-port" && typeof parseInt(secondArg) == "number") {
-    conn.write(RespEncoder.encodeSimpleString("OK"));
-    return;
+    return RespEncoder.encodeSimpleString("OK");
   }
 
   if (firstArg == "ACK" && waitCommand.isPending) {
     waitCommand.syncedReplicasCount++;
+    RespEncoder.encodeSimpleString("OK");
   }
 
-  // return RespEncoder.encodeError("ERR unknown REPLCONF option");
+  return RespEncoder.encodeError("ERR unknown REPLCONF option");
 };
 
 const EMPTY_RDB_HEX =
@@ -79,6 +75,7 @@ export const psync = (command: RespCommand, connection: Socket) => {
 
     connection.write(`$${EMPTY_RDB_BUFFER.length}\r\n`);
     connection.write(EMPTY_RDB_BUFFER);
+    console.log("replicasManager.replicas : ", replicasManager.replicas);
 
     replicasManager.addReplica(new Replica(connection));
     console.log("Replica added.");
@@ -105,10 +102,8 @@ export const wait = (command: RespCommand, connection: Socket) => {
 
   console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
 
-  if (!waitCommand.isPending) {
-    waitCommand.isPending = true;
-    waitCommand.syncedReplicasCount = 0;
-  }
+  waitCommand.isPending = true;
+  waitCommand.syncedReplicasCount = 0;
 
   if (replicasToWaitFor == 0) {
     connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
