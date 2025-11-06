@@ -102,7 +102,7 @@ export const connectReplicaToMaster = () => {
 
           if (startOffset) {
             console.log("buffer increase : ", Buffer.byteLength(str));
-            config.offset += Buffer.byteLength(str);
+            config.offset += Buffer.byteLength(cmdStr);
           }
         } catch (err) {
           console.log("error in replica handshake command : ", err);
