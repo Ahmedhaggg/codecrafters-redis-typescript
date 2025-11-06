@@ -9,6 +9,10 @@ import { Replica, replicasManager } from "../../../store/replicas";
 const waitCommand = {
   isPending: false,
   syncedReplicasCount: 0,
+  reset() {
+    this.isPending = false;
+    this.syncedReplicasCount = 0;
+  },
 };
 
 export const info = (command: RespCommand) => {
@@ -83,19 +87,44 @@ export const psync = (command: RespCommand, connection: Socket) => {
 
 export const wait = (command: RespCommand, connection: Socket) => {
   const args = command.args;
-  if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
 
-  const [firstArg, secondArg] = args.map((arg) => parseInt(arg.value));
-  console.log("[firstArg, secondArg]: ", [firstArg, secondArg]);
+  if (!isBulkStringArray(args) || args.length < 2) {
+    connection.write(RespEncoder.encodeError("ERR wrong number of arguments"));
+    return;
+  }
+
+  const [replicasToWaitFor, timeoutMs] = args.map((arg) => parseInt(arg.value, 10));
+
+  if (isNaN(replicasToWaitFor) || isNaN(timeoutMs)) {
+    connection.write(RespEncoder.encodeError("ERR invalid arguments"));
+    return;
+  }
+
+  console.log("[WAIT args]:", { replicasToWaitFor, timeoutMs });
+
   waitCommand.isPending = true;
   waitCommand.syncedReplicasCount = 0;
 
-  setTimeout(() => {
-    console.log("Inside WAIT Timeout", secondArg);
-    connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
-    waitCommand.isPending = false;
-    waitCommand.syncedReplicasCount = 0;
-  }, secondArg);
+  let elapsed = 0;
+  const intervalStep = 100;
 
-  connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+  const interval = setInterval(() => {
+    elapsed += intervalStep;
+
+    if (waitCommand.syncedReplicasCount >= replicasToWaitFor) {
+      console.log(`[WAIT] Enough replicas (${waitCommand.syncedReplicasCount}) — replying early`);
+      connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+      clearInterval(interval);
+      waitCommand.reset();
+      return;
+    }
+
+    if (elapsed >= timeoutMs) {
+      console.log(`[WAIT] Timeout reached (${elapsed}ms) — replying`);
+      connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+      clearInterval(interval);
+      waitCommand.reset();
+      return;
+    }
+  }, intervalStep);
 };
