@@ -57,11 +57,7 @@ export const replconf = (command: RespCommand, conn: Socket) => {
   }
 
   if (firstArg === "ACK") {
-    const replica = replicasManager.getReplicaByConnection(conn);
-    if (replica) {
-      replica.offset = parseInt(secondArg, 10);
-    }
-    return;
+    waitCommand.pendingSyncedCount++;
   }
 
   conn.write(RespEncoder.encodeError("ERR unknown REPLCONF option"));
