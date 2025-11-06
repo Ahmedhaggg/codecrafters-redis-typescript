@@ -108,12 +108,6 @@ export const wait = (command: RespCommand, connection: Socket) => {
     return;
   }
 
-  // If no pending writes, return immediately with number of replicas connected
-  if (replicasManager.replicasCount === 0) {
-    connection.write(RespEncoder.encodeInteger(0));
-    return;
-  }
-
   // Track number of replicas that acknowledged this WAIT
   let ackRep = 0;
 
