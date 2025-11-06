@@ -76,8 +76,9 @@ export const wait = (command: RespCommand, connection: Socket) => {
   if (!isBulkStringArray(args)) return RespEncoder.encodeError("ERR wrong number of arguments");
 
   const [firstArg, secondArg] = args.map((arg) => parseInt(arg.value));
-
+  console.log("[firstArg, secondArg]: ", [firstArg, secondArg]);
   setTimeout(() => {
+    console.log("WAIT", secondArg);
     connection.write(RespEncoder.encodeInteger(0));
   }, secondArg);
 };
