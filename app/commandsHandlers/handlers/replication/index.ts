@@ -105,7 +105,10 @@ export const wait = (command: RespCommand, connection: Socket) => {
   waitCommand.isPending = true;
   waitCommand.syncedReplicasCount = 0;
 
-  connection.write(RespEncoder.encodeInteger(waitCommand.syncedReplicasCount));
+  if (replicasToWaitFor == 0) {
+    connection.write(RespEncoder.encodeInteger(replicasManager.replicasCount));
+    return;
+  }
 
   let elapsed = 0;
   const intervalStep = 100;
@@ -129,4 +132,14 @@ export const wait = (command: RespCommand, connection: Socket) => {
       return;
     }
   }, intervalStep);
+
+  replicasManager.replicas.forEach((repl) => {
+    repl.send(
+      RespEncoder.encodeArray([
+        RespEncoder.encodeString("REPLCONF"),
+        RespEncoder.encodeString("GETACK"),
+        RespEncoder.encodeString("*"),
+      ])
+    );
+  });
 };
