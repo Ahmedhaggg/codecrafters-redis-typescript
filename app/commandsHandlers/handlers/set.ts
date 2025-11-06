@@ -1,6 +1,7 @@
 import { RespEncoder } from "../../resp/encoder";
 import { RespBulkString, RespInteger, RespString, type RespCommand } from "../../resp/objects";
 import { StoreManager } from "../../store/store-manager";
+import { handleReplicaSync } from "./replication/replica-sync.handler";
 
 export const set = (command: RespCommand): string => {
   const key = command.args?.[0];
@@ -23,6 +24,7 @@ export const set = (command: RespCommand): string => {
 
   if (!expiryCommand && !expirySeconds) {
     StoreManager.get().set(key.value, value.value);
+    handleReplicaSync(command);
     return RespEncoder.encodeSimpleString("OK");
   }
   console.log(expiryCommand, expirySeconds);
