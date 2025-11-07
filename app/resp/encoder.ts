@@ -22,6 +22,11 @@ export class RespEncoder {
     return `*${values.length}\r\n${values.join("")}`;
   }
 
+  static encodeArrayOfStrings(values: string[]): string {
+    const encoded = values.map((v) => this.encodeString(v)).join("");
+    return `*${values.length}\r\n${encoded}`;
+  }
+
   static encodeNullArray() {
     return "*-1\r\n";
   }

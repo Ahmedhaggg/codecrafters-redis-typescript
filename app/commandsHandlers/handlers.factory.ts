@@ -10,6 +10,7 @@ import { xAdd, xRange, xRead } from "./handlers/streams";
 import { type Socket } from "net";
 import { incr } from "./handlers/incr";
 import { info, psync, replconf, wait } from "./handlers/replication";
+import { getConfig } from "./handlers/getConfig";
 
 type ReqResCommands = Exclude<
   CommandName,
@@ -33,6 +34,7 @@ const commandHandlers = {
   XRANGE: xRange,
   INCR: incr,
   INFO: info,
+  CONFIG: getConfig,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {

@@ -8,6 +8,10 @@ export interface AppConfig {
     port: number;
   };
   offset: number;
+  rdb?: {
+    dir: string;
+    fileName: string;
+  };
 }
 
 const loadConfig = (): AppConfig => {
@@ -40,12 +44,25 @@ const loadConfig = (): AppConfig => {
 
   let offset = 0;
 
+  let rdb: AppConfig["rdb"];
+
+  const dbIndex = args.findIndex((arg) => arg === "--dir");
+  const dbFileNameIndex = args.findIndex((arg) => arg === "--dbfilename");
+
+  if (dbIndex !== -1 && dbFileNameIndex !== -1) {
+    rdb = {
+      dir: args[dbIndex + 1],
+      fileName: args[dbFileNameIndex + 1],
+    };
+  }
+
   return {
     id,
     port,
     role,
     offset,
     replicaOf,
+    rdb,
   };
 };
 
