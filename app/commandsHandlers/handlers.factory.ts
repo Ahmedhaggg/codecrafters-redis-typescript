@@ -11,6 +11,7 @@ import { type Socket } from "net";
 import { incr } from "./handlers/incr";
 import { info, psync, replconf, wait } from "./handlers/replication";
 import { getConfig } from "./handlers/getConfig";
+import { getKeys } from "./handlers/rdb";
 
 type ReqResCommands = Exclude<
   CommandName,
@@ -35,6 +36,7 @@ const commandHandlers = {
   INCR: incr,
   INFO: info,
   CONFIG: getConfig,
+  KEYS: getKeys,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
