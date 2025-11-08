@@ -1,5 +1,6 @@
 import { RespEncoder } from "../../resp/encoder";
 import { RespBulkString, RespString, type RespCommand } from "../../resp/objects";
+import { rdbManager } from "../../store/rdb";
 import { StoreManager } from "../../store/store-manager";
 
 export const get = (command: RespCommand) => {
@@ -12,7 +13,11 @@ export const get = (command: RespCommand) => {
 
   const value = StoreManager.get().get(keyCommand.value);
 
-  if (!value) return RespEncoder.encodeNil();
+  if (value) return RespEncoder.encodeString(value.toString());
 
-  return RespEncoder.encodeString(value.toString());
+  const valueInRdb = rdbManager.searchByKey(keyCommand.value);
+
+  if (valueInRdb) return RespEncoder.encodeString(valueInRdb);
+
+  return RespEncoder.encodeNil();
 };
