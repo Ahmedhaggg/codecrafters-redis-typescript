@@ -2,19 +2,12 @@ import fs from "fs";
 import path from "path";
 import { config } from "../config/config";
 
-export class RDBFile {
+export class RDBFileParse {
   private offset = 0;
-  private fileBuffer: Buffer;
   private content: Buffer;
 
-  constructor() {
-    this.fileBuffer = this.readRdbFile();
-
+  constructor(private fileBuffer: Buffer) {
     this.content = this.readContent();
-  }
-
-  private readRdbFile() {
-    return fs.readFileSync(path.join(config.rdb!.dir, config.rdb!.fileName));
   }
 
   public readContent() {
@@ -24,15 +17,46 @@ export class RDBFile {
     return this.fileBuffer.slice(start, end);
   }
 
-  public readLine() {
-    let typeFlag = this.content[this.offset];
-    if (typeFlag === 0xff || this.offset >= this.content.length) {
+  public readLine(): { key: string; value: string; expiry?: number } | null {
+    let typeFlag = this.content[this.offset++];
+    if (this.offset >= this.content.length) {
       console.log("end");
       return null;
     }
 
-    console.log("typeFlag: ", typeFlag);
-    this.offset++;
+    let expiry: number | undefined = undefined;
+
+    if (typeFlag === 0xfc) {
+      const timestamp = this.content.readBigInt64LE(this.offset);
+      console.log("FC (ms):", timestamp.toString());
+      console.log("FC date:", new Date(Number(timestamp)));
+      expiry = Number(timestamp);
+
+      this.offset += 8;
+      const nextLine = this.readLine();
+      return nextLine ? { ...nextLine, expiry } : null;
+    }
+    if (typeFlag === 0xfd) {
+      const timestamp = this.content.readInt32LE(this.offset);
+
+      console.log("FD (ms):", timestamp.toString());
+      console.log("FD date:", new Date(Number(timestamp * 1000)));
+
+      expiry = Number(timestamp * 1000);
+
+      this.offset += 4;
+
+      const nextLine = this.readLine();
+      return nextLine ? { ...nextLine, expiry } : null;
+    }
+
+    if (typeFlag === 0xfe) {
+      console.log("FE: ", new Date(this.offset, this.offset + 1));
+      this.offset += 1;
+      return this.readLine();
+    }
+
+    if (typeFlag === 0xff) return null;
 
     let keyLength = this.content[this.offset];
     console.log("keyLength: ", keyLength);
@@ -55,29 +79,47 @@ export class RDBFile {
 
     this.offset += valueLen;
 
-    return { key, value };
+    return { key, value, expiry };
   }
 }
 
 export class RdbManager {
+  private buffer: Buffer | null = null;
+
+  getRdbFile() {
+    if (this.buffer) return this.buffer;
+
+    const file = fs.readFileSync(path.join(config.rdb!.dir, config.rdb!.fileName));
+    this.buffer = file;
+
+    return file;
+  }
+
   searchByKey(key: string) {
     if (!config.rdb) return null;
 
-    const file = new RDBFile();
+    const fileParser = new RDBFileParse(this.getRdbFile());
 
     while (true) {
-      const line = file.readLine();
+      const line = fileParser.readLine();
 
       if (line == null) return null;
 
-      if (line?.key == key) return line.value;
+      if (line?.key == key) {
+        console.log(line);
+        if (line.expiry && line.expiry < Date.now()) {
+          console.log("Found Expiry Key");
+          return null;
+        }
+        return line.value;
+      }
     }
   }
 
   getAllKeys() {
     if (!config.rdb) return [];
 
-    const file = new RDBFile();
+    const file = new RDBFileParse(this.getRdbFile());
 
     let keys = [];
 
@@ -95,7 +137,7 @@ export class RdbManager {
   getAllValues() {
     if (!config.rdb) return [];
 
-    const file = new RDBFile();
+    const file = new RDBFileParse(this.getRdbFile());
 
     let values = [];
 
