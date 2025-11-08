@@ -12,12 +12,13 @@ import { incr } from "./handlers/incr";
 import { info, psync, replconf, wait } from "./handlers/replication";
 import { getConfig } from "./handlers/getConfig";
 import { getKeys } from "./handlers/rdb";
+import { subscribe } from "./handlers/pubsub";
 
 type ReqResCommands = Exclude<
   CommandName,
-  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC" | "WAIT" | "REPLCONF"
+  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE"
 >;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF">;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -45,6 +46,7 @@ const observersCommandHandlers = {
   PSYNC: psync,
   WAIT: wait,
   REPLCONF: replconf,
+  SUBSCRIBE: subscribe,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 type GetCommandHandler =

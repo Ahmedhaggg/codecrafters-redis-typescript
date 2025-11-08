@@ -1,0 +1,34 @@
+import { randomUUID } from "crypto";
+import { Socket } from "net";
+
+type Subscribe = Socket & { subscribeId?: string };
+
+export class SubscriberManager {
+  private subscribers: Map<
+    string,
+    {
+      conn: Socket;
+      channels: string[];
+    }
+  > = new Map();
+
+  public addSubscriber(conn: Subscribe, channel: string) {
+    if (conn.subscribeId && this.subscribers.has(conn.subscribeId)) {
+      const subscriber = this.subscribers.get(conn.subscribeId)!;
+      this.subscribers.set(conn.subscribeId, {
+        ...subscriber,
+        channels: [...subscriber.channels, channel],
+      });
+
+      return subscriber.channels.length + 1;
+    } else {
+      const subscribeId = randomUUID();
+      (conn as any).subscribeId = subscribeId;
+
+      this.subscribers.set(subscribeId, { channels: [channel], conn });
+      return 1;
+    }
+  }
+}
+
+export const subscriberManager = new SubscriberManager();
