@@ -33,6 +33,17 @@ export class SubscriberManager {
   public isConnectionSubscribed(conn: Subscribe) {
     return conn.subscribeId ? true :false
   }
+
+  public publish(targetChannel: string, message: string) {
+    let notifiedChannels = 0;
+    for (const { conn, channels } of this.subscribers.values()) {
+      if (channels.includes(targetChannel)) {
+        notifiedChannels++;
+        conn.write(message);
+      }
+    }  
+    return notifiedChannels; 
+  }
 }
 
 export const subscriberManager = new SubscriberManager();

@@ -18,3 +18,18 @@ export const subscribe = (command: RespCommand, conn: Socket) => {
     RespEncoder.encodeInteger(channelsNum),
   ]);
 };
+
+export const publish = (command: RespCommand) => {
+  const args = command.args;
+
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("Invalid Args");
+
+  const channel = args[0].value;
+  const message = args[1].value;
+
+  const messageFormatted = RespEncoder.encodeArrayOfStrings(["message", channel, message]);
+
+  const notifiedSubscribers = subscriberManager.publish(channel, messageFormatted);
+
+  return RespEncoder.encodeInteger(notifiedSubscribers);
+};

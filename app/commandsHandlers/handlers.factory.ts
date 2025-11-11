@@ -12,13 +12,24 @@ import { incr } from "./handlers/incr";
 import { info, psync, replconf, wait } from "./handlers/replication";
 import { getConfig } from "./handlers/getConfig";
 import { getKeys } from "./handlers/rdb";
-import { subscribe } from "./handlers/pubsub";
+import { publish, subscribe } from "./handlers/pubsub";
 
 type ReqResCommands = Exclude<
   CommandName,
-  "BLPOP" | "XREAD" | "MULTI" | "EXEC" | "MULTI" | "EXEC" | "DISCARD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE" | "PING"
+  | "BLPOP"
+  | "XREAD"
+  | "MULTI"
+  | "EXEC"
+  | "MULTI"
+  | "EXEC"
+  | "DISCARD"
+  | "PSYNC"
+  | "WAIT"
+  | "REPLCONF"
+  | "SUBSCRIBE"
+  | "PING"
 >;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE"| "PING">;
+type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE" | "PING">;
 
 const commandHandlers = {
   ECHO: echo,
@@ -37,6 +48,7 @@ const commandHandlers = {
   INFO: info,
   CONFIG: getConfig,
   KEYS: getKeys,
+  PUBLISH: publish,
 } as const satisfies Record<ReqResCommands, (cmd: RespCommand) => string | Buffer>;
 
 const observersCommandHandlers = {
@@ -46,7 +58,7 @@ const observersCommandHandlers = {
   WAIT: wait,
   REPLCONF: replconf,
   SUBSCRIBE: subscribe,
-  PING: ping
+  PING: ping,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 type GetCommandHandler =
@@ -66,5 +78,4 @@ export const getCommandHandler = (cmd: RespCommand): GetCommandHandler => {
   throw null;
 };
 
-
-export const ALLOWED_COMMANDS_FOR_SUBSCRIBERS : CommandName[] = ["SUBSCRIBE", "PING"]
+export const ALLOWED_COMMANDS_FOR_SUBSCRIBERS: CommandName[] = ["SUBSCRIBE", "PING"];
