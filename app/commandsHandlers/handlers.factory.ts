@@ -65,3 +65,6 @@ export const getCommandHandler = (cmd: RespCommand): GetCommandHandler => {
 
   throw null;
 };
+
+
+export const ALLOWED_COMMANDS_FOR_SUBSCRIBERS : CommandName[] = ["SUBSCRIBE"]

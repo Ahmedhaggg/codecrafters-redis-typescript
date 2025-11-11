@@ -29,6 +29,10 @@ export class SubscriberManager {
       return 1;
     }
   }
+
+  public isConnectionSubscribed(conn: Subscribe) {
+    return conn.subscribeId ? true :false
+  }
 }
 
 export const subscriberManager = new SubscriberManager();
