@@ -33,3 +33,19 @@ export const publish = (command: RespCommand) => {
 
   return RespEncoder.encodeInteger(notifiedSubscribers);
 };
+
+export const unSubscribe = (command: RespCommand, conn: Socket) => {
+  const args = command.args;
+
+  if (!isBulkStringArray(args)) return RespEncoder.encodeError("Invalid Args");
+
+  const channel = args[0].value;
+
+  const currentChannelsCount = subscriberManager.unSubscribeFromChannel(conn, channel);
+
+  return RespEncoder.encodeArray([
+    RespEncoder.encodeString("unsubscribe"),
+    RespEncoder.encodeString(channel),
+    RespEncoder.encodeInteger(currentChannelsCount),
+  ]);
+};

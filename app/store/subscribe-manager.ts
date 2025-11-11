@@ -30,8 +30,23 @@ export class SubscriberManager {
     }
   }
 
+  public unSubscribeFromChannel(conn: Subscribe, targetChannel: string) {
+    const subscriber = this.subscribers.get(conn.subscribeId!);
+
+    if (!subscriber || !subscriber.channels.length) return 0;
+
+    const channelsAfterRemoveUnsubscribedChannel = subscriber.channels.filter((channel) => targetChannel !== channel);
+
+    this.subscribers.set(conn.subscribeId!, {
+      ...subscriber,
+      channels: channelsAfterRemoveUnsubscribedChannel,
+    });
+
+    return channelsAfterRemoveUnsubscribedChannel.length;
+  }
+
   public isConnectionSubscribed(conn: Subscribe) {
-    return conn.subscribeId ? true :false
+    return conn.subscribeId ? true : false;
   }
 
   public publish(targetChannel: string, message: string) {
@@ -41,8 +56,8 @@ export class SubscriberManager {
         notifiedChannels++;
         conn.write(message);
       }
-    }  
-    return notifiedChannels; 
+    }
+    return notifiedChannels;
   }
 }
 

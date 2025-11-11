@@ -12,7 +12,7 @@ import { incr } from "./handlers/incr";
 import { info, psync, replconf, wait } from "./handlers/replication";
 import { getConfig } from "./handlers/getConfig";
 import { getKeys } from "./handlers/rdb";
-import { publish, subscribe } from "./handlers/pubsub";
+import { publish, subscribe, unSubscribe } from "./handlers/pubsub";
 
 type ReqResCommands = Exclude<
   CommandName,
@@ -28,8 +28,12 @@ type ReqResCommands = Exclude<
   | "REPLCONF"
   | "SUBSCRIBE"
   | "PING"
+  | "UNSUBSCRIBE"
 >;
-type ObserversCommands = Extract<CommandName, "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE" | "PING">;
+type ObserversCommands = Extract<
+  CommandName,
+  "BLPOP" | "XREAD" | "PSYNC" | "WAIT" | "REPLCONF" | "SUBSCRIBE" | "PING" | "UNSUBSCRIBE"
+>;
 
 const commandHandlers = {
   ECHO: echo,
@@ -59,6 +63,7 @@ const observersCommandHandlers = {
   REPLCONF: replconf,
   SUBSCRIBE: subscribe,
   PING: ping,
+  UNSUBSCRIBE: unSubscribe,
 } as const satisfies Record<ObserversCommands, (cmd: RespCommand, conn: Socket) => string | Buffer | void>;
 
 type GetCommandHandler =
@@ -78,4 +83,4 @@ export const getCommandHandler = (cmd: RespCommand): GetCommandHandler => {
   throw null;
 };
 
-export const ALLOWED_COMMANDS_FOR_SUBSCRIBERS: CommandName[] = ["SUBSCRIBE", "PING"];
+export const ALLOWED_COMMANDS_FOR_SUBSCRIBERS: CommandName[] = ["SUBSCRIBE", "PING", "UNSUBSCRIBE"];
